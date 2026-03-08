@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+
+echo "==> TypeScript typecheck..."
+bun run typecheck
+
+echo "==> ESLint..."
+bun run lint
+
+echo "==> Rust check..."
+cd src-tauri
+PATH="$HOME/.cargo/bin:$PATH" cargo check --quiet 2>&1
+
+echo "==> Rust tests..."
+PATH="$HOME/.cargo/bin:$PATH" cargo test --quiet 2>&1
+
+echo "==> All checks passed."
