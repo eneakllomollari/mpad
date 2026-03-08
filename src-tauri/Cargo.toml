@@ -1,0 +1,28 @@
+[package]
+name = "mpad"
+version = "0.1.0"
+description = "A desktop markdown editor"
+authors = ["Enea Kllomollari"]
+license = "MIT"
+repository = ""
+edition = "2021"
+rust-version = "1.85"
+
+[lib]
+name = "mpad_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.6", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tauri = { version = "2.10.3", features = [] }
+tauri-plugin-fs = { version = "2.4.5", features = ["watch"] }
+tauri-plugin-cli = "2.4.1"
+git2 = { version = "0.20.4", features = ["vendored-libgit2"] }
+tauri-plugin-single-instance = "2.4.0"
+tauri-plugin-dialog = "2.6.0"
+open = "5"
+openssl-sys = { version = "0.9", features = ["vendored"] }

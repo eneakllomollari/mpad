@@ -1,0 +1,136 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Editor } from '@tiptap/core';
+import type { SearchHighlightStorage } from '../extensions/SearchHighlight';
+
+interface FindBarProps {
+  editor: Editor | null;
+  visible: boolean;
+  onClose: () => void;
+}
+
+function getSearch(editor: Editor): SearchHighlightStorage {
+  return (editor.storage as unknown as Record<string, SearchHighlightStorage>).searchHighlight;
+}
+
+function clearSearch(editor: Editor | null) {
+  if (!editor || editor.isDestroyed) return;
+  const s = getSearch(editor);
+  s.query = '';
+  s.activeIndex = 0;
+  editor.view.dispatch(editor.state.tr);
+}
+
+export function FindBar({ editor, visible, onClose }: FindBarProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState('');
+
+  // Focus input when bar opens; clear search highlights on cleanup (covers
+  // both Escape/close-button and Cmd+F toggle which bypasses handleClose)
+  useEffect(() => {
+    if (visible) {
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      });
+    }
+    return () => { clearSearch(editor); };
+  }, [visible, editor]);
+
+  const handleClose = useCallback(() => {
+    setQuery('');
+    clearSearch(editor);
+    onClose();
+  }, [editor, onClose]);
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value;
+      setQuery(val);
+      if (!editor || editor.isDestroyed) return;
+      const s = getSearch(editor);
+      s.query = val;
+      s.activeIndex = 0;
+      editor.view.dispatch(editor.state.tr);
+    },
+    [editor],
+  );
+
+  const navigate = useCallback(
+    (direction: 1 | -1) => {
+      if (!editor || editor.isDestroyed) return;
+      const s = getSearch(editor);
+      if (s.totalMatches === 0) return;
+
+      s.activeIndex = (s.activeIndex + direction + s.totalMatches) % s.totalMatches;
+      editor.view.dispatch(editor.state.tr);
+
+      requestAnimationFrame(() => {
+        const active = editor.view.dom.querySelector('.search-match-active');
+        active?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      });
+    },
+    [editor],
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        navigate(e.shiftKey ? -1 : 1);
+      }
+    },
+    [handleClose, navigate],
+  );
+
+  if (!visible) return null;
+
+  const s = editor && !editor.isDestroyed ? getSearch(editor) : null;
+  const total = s?.totalMatches ?? 0;
+  const current = total > 0 ? (s?.activeIndex ?? 0) + 1 : 0;
+
+  return (
+    <div className="find-bar">
+      <input
+        ref={inputRef}
+        type="text"
+        className="find-bar-input"
+        placeholder="Find…"
+        value={query}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        spellCheck={false}
+      />
+      <span className="find-bar-count">
+        {query ? `${current}/${total}` : ''}
+      </span>
+      <button
+        type="button"
+        className="find-bar-btn"
+        onClick={() => navigate(-1)}
+        disabled={total === 0}
+        title="Previous (Shift+Enter)"
+      >
+        ▲
+      </button>
+      <button
+        type="button"
+        className="find-bar-btn"
+        onClick={() => navigate(1)}
+        disabled={total === 0}
+        title="Next (Enter)"
+      >
+        ▼
+      </button>
+      <button
+        type="button"
+        className="find-bar-btn"
+        onClick={handleClose}
+        title="Close (Esc)"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}

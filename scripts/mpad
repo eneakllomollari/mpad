@@ -1,0 +1,36 @@
+#!/bin/bash
+# CLI wrapper for mpad — symlink to /usr/local/bin/mpad
+# Usage: mpad [file.md]
+
+set -euo pipefail
+
+APP_BUNDLE="/Applications/mpad.app"
+DEV_BUNDLE="$(dirname "$0")/../src-tauri/target/release/bundle/macos/mpad.app"
+
+# Resolve file argument to absolute path
+FILE_ARG=""
+if [ "${1:-}" != "" ]; then
+  if [[ "$1" = /* ]]; then
+    FILE_ARG="$1"
+  else
+    FILE_ARG="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+  fi
+fi
+
+# Find the app bundle
+if [ -d "$APP_BUNDLE" ]; then
+  TARGET="$APP_BUNDLE"
+elif [ -d "$DEV_BUNDLE" ]; then
+  TARGET="$DEV_BUNDLE"
+else
+  echo "mpad: app bundle not found." >&2
+  echo "  Expected at: $APP_BUNDLE" >&2
+  echo "  Or build with: cd $(dirname "$0")/.. && bun tauri build" >&2
+  exit 1
+fi
+
+if [ -n "$FILE_ARG" ]; then
+  open -a "$TARGET" --args "$FILE_ARG"
+else
+  open -a "$TARGET"
+fi
