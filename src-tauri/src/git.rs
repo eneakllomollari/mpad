@@ -4,7 +4,9 @@ use std::path::Path;
 
 /// Map a `git2::Status` bitflag to a human-readable label.
 fn status_label(s: git2::Status) -> &'static str {
-    if s.intersects(git2::Status::INDEX_NEW | git2::Status::WT_NEW) {
+    if s.intersects(git2::Status::CONFLICTED) {
+        "conflicted"
+    } else if s.intersects(git2::Status::INDEX_NEW | git2::Status::WT_NEW) {
         "new"
     } else if s.intersects(git2::Status::INDEX_MODIFIED | git2::Status::WT_MODIFIED) {
         "modified"
@@ -106,6 +108,9 @@ pub fn file_diff(repo_path: &str, file_path: &str) -> Result<String, git2::Error
 
     let mut opts = DiffOptions::new();
     opts.pathspec(rel.to_string_lossy().as_ref());
+    opts.include_untracked(true);
+    opts.recurse_untracked_dirs(true);
+    opts.show_untracked_content(true);
 
     let diff = repo.diff_tree_to_workdir_with_index(
         head_tree.as_ref(),
@@ -157,7 +162,7 @@ pub fn file_log(
         let diff =
             repo.diff_tree_to_tree(parent_tree.as_ref(), Some(&tree), Some(&mut diff_opts))?;
 
-        if diff.deltas().len() == 0 && commit.parent_count() > 0 {
+        if diff.deltas().len() == 0 {
             continue;
         }
 
@@ -370,7 +375,7 @@ mod tests {
         let (repo_path, file_path) = make_temp_repo("file_status_valid");
         let status = file_status(&repo_path, &file_path).expect("file_status should succeed");
         assert!(!status.branch.is_empty(), "branch should not be empty");
-        let valid = ["clean", "new", "modified", "deleted", "renamed", "ignored"];
+        let valid = ["clean", "new", "modified", "deleted", "renamed", "ignored", "conflicted"];
         assert!(
             valid.contains(&status.status.as_str()),
             "unexpected status: {}",
@@ -410,6 +415,41 @@ mod tests {
     fn file_status_error_for_invalid_repo() {
         let result = file_status("/tmp", "/tmp/nonexistent.md");
         assert!(result.is_err(), "should return error for non-repo path");
+    }
+
+    #[test]
+    fn status_label_reports_conflicts() {
+        assert_eq!(status_label(git2::Status::CONFLICTED), "conflicted");
+    }
+
+    #[test]
+    fn file_diff_includes_untracked_file_content() {
+        let (repo_path, _) = make_temp_repo("file_diff_untracked");
+        let untracked_file = Path::new(&repo_path).join("new.md");
+        fs::write(&untracked_file, "# New file\nbody").unwrap();
+
+        let untracked_path = untracked_file.to_string_lossy().to_string();
+        let diff = file_diff(&repo_path, &untracked_path).expect("file_diff should succeed");
+
+        assert!(diff.contains("new file mode"));
+        assert!(diff.contains("+++ b/new.md"));
+        assert!(diff.contains("+# New file"));
+
+        cleanup_temp_repo("file_diff_untracked");
+    }
+
+    #[test]
+    fn file_log_is_empty_for_untracked_file_without_history() {
+        let (repo_path, _) = make_temp_repo("file_log_untracked");
+        let untracked_file = Path::new(&repo_path).join("new.md");
+        fs::write(&untracked_file, "# New file\nbody").unwrap();
+        let untracked_path = untracked_file.to_string_lossy().to_string();
+
+        let commits = file_log(&repo_path, &untracked_path, 50).expect("file_log should succeed");
+
+        assert!(commits.is_empty(), "untracked files should not invent commit history");
+
+        cleanup_temp_repo("file_log_untracked");
     }
 
     // ── repo_tree ───────────────────────────────────────────────

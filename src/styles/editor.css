@@ -675,6 +675,7 @@ body {
 .git-status-modified { color: var(--git-modified); }
 .git-status-untracked { color: var(--git-untracked); }
 .git-status-deleted { color: var(--git-deleted); }
+.git-status-conflicted { color: var(--git-deleted); }
 
 /* ── Sidebar ───────────────────────────────────────── */
 

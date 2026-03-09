@@ -8,7 +8,7 @@ interface GitStatusBarProps {
 
 interface GitStatus {
   branch: string;
-  status: 'clean' | 'modified' | 'untracked' | 'deleted' | 'unknown';
+  status: 'clean' | 'new' | 'modified' | 'deleted' | 'renamed' | 'ignored' | 'conflicted' | 'unknown';
 }
 
 export function GitStatusBar({ filePath, repoPath }: GitStatusBarProps) {

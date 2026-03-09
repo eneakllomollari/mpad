@@ -87,6 +87,8 @@ function statusColor(status: string): string | undefined {
   switch (status) {
     case 'modified':
       return 'var(--git-modified)';
+    case 'conflicted':
+      return 'var(--git-deleted)';
     case 'untracked':
     case 'new':
       return 'var(--git-added)';
