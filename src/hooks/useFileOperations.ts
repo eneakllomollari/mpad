@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { createFileSaveCoordinator } from '../lib/fileSaveCoordinator';
 
 interface FileOperationsResult {
   readFile: (path: string) => Promise<string>;
@@ -8,46 +9,38 @@ interface FileOperationsResult {
 }
 
 export function useFileOperations(): FileOperationsResult {
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Clean up pending debounce on unmount
-  useEffect(() => () => {
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+  const doWrite = useCallback(async (path: string, content: string) => {
+    await invoke('write_file', { path, content });
   }, []);
+
+  const saveCoordinator = useMemo(
+    () => createFileSaveCoordinator(doWrite, 500, (err) => {
+      console.error('Failed to save file:', err);
+    }),
+    [doWrite],
+  );
+
+  // Clean up pending debounced saves on unmount.
+  useEffect(() => () => {
+    saveCoordinator.clearAll();
+  }, [saveCoordinator]);
 
   const readFile = useCallback(async (path: string): Promise<string> => {
     return invoke<string>('read_file', { path });
   }, []);
 
-  const doWrite = useCallback(async (path: string, content: string) => {
-    try {
-      await invoke('write_file', { path, content });
-    } catch (err) {
-      console.error('Failed to save file:', err);
-    }
-  }, []);
-
   const save = useCallback(
     (path: string, content: string, onSaved?: () => void) => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-      debounceTimer.current = setTimeout(() => {
-        doWrite(path, content).then(() => onSaved?.());
-      }, 500);
+      saveCoordinator.save(path, content, onSaved);
     },
-    [doWrite],
+    [saveCoordinator],
   );
 
   const saveImmediate = useCallback(
     (path: string, content: string): Promise<void> => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-        debounceTimer.current = null;
-      }
-      return doWrite(path, content);
+      return saveCoordinator.saveImmediate(path, content);
     },
-    [doWrite],
+    [saveCoordinator],
   );
 
   return { readFile, save, saveImmediate };

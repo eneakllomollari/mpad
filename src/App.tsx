@@ -48,6 +48,7 @@ function App() {
   const showDiffRef = useRef(showDiff);
   const filePathRef = useRef(filePath);
   const repoPathRef = useRef(repoPath);
+  const loadRequestIdRef = useRef(0);
   useEffect(() => { showDiffRef.current = showDiff; });
   useEffect(() => { filePathRef.current = filePath; });
   useEffect(() => { repoPathRef.current = repoPath; });
@@ -55,10 +56,14 @@ function App() {
   // Load file content and find git repo (parallel)
   const loadFile = useCallback(
     async (path: string) => {
+      const requestId = loadRequestIdRef.current + 1;
+      loadRequestIdRef.current = requestId;
       const [textResult, repoResult] = await Promise.allSettled([
         readFile(path),
         invoke<string | null>('git_find_repo', { path }),
       ]);
+
+      if (requestId !== loadRequestIdRef.current) return;
 
       if (textResult.status === 'fulfilled') {
         setContent(textResult.value);
@@ -69,13 +74,26 @@ function App() {
       }
 
       const rp = repoResult.status === 'fulfilled' ? repoResult.value : null;
+      if (rp !== repoPathRef.current) {
+        setMdFiles([]);
+      }
       setRepoPath(rp);
 
       // Refresh diff if panel is open (use ref for fresh showDiff value)
       if (showDiffRef.current && rp) {
         invoke<string>('git_file_diff', { repoPath: rp, filePath: path })
-          .then(setDiff)
-          .catch(() => setDiff(''));
+          .then((nextDiff) => {
+            if (requestId === loadRequestIdRef.current) {
+              setDiff(nextDiff);
+            }
+          })
+          .catch(() => {
+            if (requestId === loadRequestIdRef.current) {
+              setDiff('');
+            }
+          });
+      } else {
+        setDiff('');
       }
     },
     [readFile],
@@ -166,7 +184,11 @@ function App() {
   // Force save (Cmd+S) — write immediately, no debounce
   const handleSave = useCallback(() => {
     if (filePath) {
-      saveImmediate(filePath, contentRef.current).then(refreshDiff);
+      saveImmediate(filePath, contentRef.current)
+        .then(refreshDiff)
+        .catch((err) => {
+          console.error('Failed to save file:', err);
+        });
     }
   }, [filePath, saveImmediate, refreshDiff]);
 
@@ -243,6 +265,7 @@ function App() {
       {showSidebar && (
         <Suspense>
           <Sidebar
+            key={repoPath ?? 'no-repo'}
             repoPath={repoPath}
             currentFile={filePath}
             onFileSelect={loadFile}
@@ -305,7 +328,7 @@ function App() {
         <Suspense>
           <CommandPalette
             commands={paletteCommands}
-            files={mdFiles}
+            files={repoPath ? mdFiles : []}
             repoPath={repoPath}
             onFileSelect={loadFile}
             onClose={() => setShowPalette(false)}
