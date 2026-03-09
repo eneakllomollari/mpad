@@ -10,6 +10,9 @@ bun run lint
 echo "==> OxLint..."
 bun run oxlint
 
+echo "==> Knip (dead code)..."
+bunx knip
+
 echo "==> Rust check..."
 cd src-tauri
 PATH="$HOME/.cargo/bin:$PATH" cargo check --quiet 2>&1
