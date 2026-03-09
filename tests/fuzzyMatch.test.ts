@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { fuzzyMatch, filterItems } from './fuzzyMatch';
-import type { PaletteCommand } from './fuzzyMatch';
+import { fuzzyMatch, filterItems } from '../src/lib/fuzzyMatch';
+import type { PaletteCommand } from '../src/lib/fuzzyMatch';
 
 // --- fuzzyMatch ---
 

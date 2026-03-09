@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { preprocessContent, postprocessContent } from './contentProcessing';
+import { preprocessContent, postprocessContent } from '../src/lib/contentProcessing';
 
 describe('preprocessContent', () => {
   it('extracts frontmatter', () => {
