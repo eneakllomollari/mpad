@@ -12,6 +12,7 @@
     "core:window:allow-set-title",
     "core:window:allow-close",
     "core:window:allow-theme",
+    "core:webview:allow-set-webview-zoom",
     {
       "identifier": "fs:scope",
       "allow": [

@@ -6,6 +6,7 @@ import { Extension } from '@tiptap/core';
 import { Markdown } from 'tiptap-markdown';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import Highlight from '@tiptap/extension-highlight';
+import Image from '@tiptap/extension-image';
 import { common, createLowlight } from 'lowlight';
 import { gfmExtensions } from '../extensions/gfm';
 import { FrontmatterNode } from '../extensions/FrontmatterNode';
@@ -194,6 +195,7 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
         HTMLAttributes: { class: 'code-block' },
       }),
       Highlight.configure({ multicolor: false }),
+      Image.configure({ inline: false, allowBase64: true }),
       Markdown.configure({
         html: true,
         transformPastedText: true,
