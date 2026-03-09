@@ -10,7 +10,7 @@ export interface SearchHighlightStorage {
 
 const searchPluginKey = new PluginKey('searchHighlight');
 
-function findMatches(doc: ReturnType<typeof import('@tiptap/pm/state').EditorState.prototype.doc.nodeAt>, query: string): { from: number; to: number }[] {
+function findMatches(doc: import('@tiptap/pm/model').Node, query: string): { from: number; to: number }[] {
   if (!query) return [];
   const results: { from: number; to: number }[] = [];
   const lowerQuery = query.toLowerCase();
