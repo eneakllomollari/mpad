@@ -3,8 +3,8 @@ import { invoke } from '@tauri-apps/api/core';
 
 interface FileOperationsResult {
   readFile: (path: string) => Promise<string>;
-  save: (path: string, content: string) => void;
-  saveImmediate: (path: string, content: string) => void;
+  save: (path: string, content: string, onSaved?: () => void) => void;
+  saveImmediate: (path: string, content: string) => Promise<void>;
 }
 
 export function useFileOperations(): FileOperationsResult {
@@ -28,24 +28,24 @@ export function useFileOperations(): FileOperationsResult {
   }, []);
 
   const save = useCallback(
-    (path: string, content: string) => {
+    (path: string, content: string, onSaved?: () => void) => {
       if (debounceTimer.current) {
         clearTimeout(debounceTimer.current);
       }
       debounceTimer.current = setTimeout(() => {
-        doWrite(path, content);
+        doWrite(path, content).then(() => onSaved?.());
       }, 500);
     },
     [doWrite],
   );
 
   const saveImmediate = useCallback(
-    (path: string, content: string) => {
+    (path: string, content: string): Promise<void> => {
       if (debounceTimer.current) {
         clearTimeout(debounceTimer.current);
         debounceTimer.current = null;
       }
-      doWrite(path, content);
+      return doWrite(path, content);
     },
     [doWrite],
   );

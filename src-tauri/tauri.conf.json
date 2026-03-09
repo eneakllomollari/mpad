@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "mdview",
+  "productName": "mpad",
   "version": "0.1.0",
-  "identifier": "com.mdview.editor",
+  "identifier": "com.mpad.editor",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "mdview",
+        "title": "mpad",
         "width": 900,
         "height": 700,
         "minWidth": 400,
@@ -38,7 +38,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["app"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

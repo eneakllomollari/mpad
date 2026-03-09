@@ -1,73 +1,72 @@
-# React + TypeScript + Vite
+# mpad
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A desktop Markdown editor built with Tauri, React, and Rust. WYSIWYG editing powered by TipTap, with built-in git integration and a warm editorial aesthetic.
 
-Currently, two official plugins are available:
+![MIT License](https://img.shields.io/badge/license-MIT-blue)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- **WYSIWYG editing** — TipTap-based with slash commands, bubble menu, heading cycling
+- **Git integration** — status overlay, inline diff, commit log
+- **Command palette** — unified `Cmd+K` for files and commands with fuzzy matching
+- **File sidebar** — recursive markdown tree with git status indicators
+- **Find & replace** — in-editor search with highlighting
+- **Code highlighting** — syntax highlighting via lowlight
+- **Keyboard-driven** — extensive shortcuts, no mouse required
+- **Agent-friendly** — ships with Claude Code / Cursor skills for QA, code review, and React best practices
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Install
 
-## Expanding the ESLint configuration
+### Build from source
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Requires [Bun](https://bun.sh) and [Rust](https://rustup.rs).
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+bun install
+bunx tauri build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### macOS
 
-```js
-fd// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cp -r src-tauri/target/release/bundle/macos/mpad.app /Applications/
 ```
+
+Optional CLI wrapper:
+
+```bash
+ln -sf "$(pwd)/scripts/mpad" /usr/local/bin/mpad
+```
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `Cmd+K` | Command palette (files + commands) |
+| `Cmd+S` | Save |
+| `Cmd+O` | Open file |
+| `Cmd+/` | Toggle source view |
+| `Cmd+D` | Toggle diff |
+| `Cmd+B` | Toggle sidebar |
+| `Cmd+L` | Git log |
+| `Cmd+Shift+Up/Down` | Cycle heading level |
+| `/` | Slash commands (on empty line) |
+
+## Development
+
+```bash
+bun install
+bun run dev           # Start dev server + Tauri
+bun run check         # TypeScript + ESLint
+bun run test          # Vitest
+bun run check:rust    # cargo check + cargo test
+bun run check:all     # All checks
+```
+
+## Tech stack
+
+- **Runtime**: Tauri v2 (Rust + React/TypeScript/Vite)
+- **Editor**: TipTap + tiptap-markdown + CodeBlockLowlight
+- **Git**: git2 crate with vendored libgit2
+- **Package manager**: Bun
+- **Theme**: Warm editorial — terracotta `#c4603c`, Source Serif 4, DM Sans, JetBrains Mono

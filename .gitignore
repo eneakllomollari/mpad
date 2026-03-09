@@ -25,3 +25,12 @@ src-tauri/target
 
 # Tasks (local dev only)
 tasks/
+
+# Dev test files
+test.md
+
+# Plans (local dev only)
+docs/plans/
+
+# Claude Code worktrees
+.claude/worktrees/

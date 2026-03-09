@@ -1,15 +1,15 @@
 [package]
-name = "mdview"
+name = "mpad"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
+description = "A desktop markdown editor"
+authors = ["Enea Kllomollari"]
+license = "MIT"
 repository = ""
 edition = "2021"
 rust-version = "1.77.2"
 
 [lib]
-name = "mdview_lib"
+name = "mpad_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

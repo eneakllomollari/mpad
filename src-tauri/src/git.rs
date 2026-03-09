@@ -308,7 +308,7 @@ mod tests {
 
     /// Helper: create a temp git repo with one committed file, returning (repo_path, file_path).
     fn make_temp_repo(name: &str) -> (String, String) {
-        let tmp = std::env::temp_dir().join(format!("mdview_test_{name}"));
+        let tmp = std::env::temp_dir().join(format!("mpad_test_{name}"));
         let _ = fs::remove_dir_all(&tmp);
         fs::create_dir_all(&tmp).unwrap();
 
@@ -329,7 +329,7 @@ mod tests {
     }
 
     fn cleanup_temp_repo(name: &str) {
-        let tmp = std::env::temp_dir().join(format!("mdview_test_{name}"));
+        let tmp = std::env::temp_dir().join(format!("mpad_test_{name}"));
         let _ = fs::remove_dir_all(&tmp);
     }
 

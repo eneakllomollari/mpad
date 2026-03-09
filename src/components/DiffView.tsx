@@ -1,15 +1,18 @@
+import type { CSSProperties } from 'react';
+
 interface DiffViewProps {
   diff: string;
   visible: boolean;
+  style?: CSSProperties;
 }
 
-export function DiffView({ diff, visible }: DiffViewProps) {
+export function DiffView({ diff, visible, style }: DiffViewProps) {
   if (!visible || !diff) return null;
 
   const lines = diff.split('\n');
 
   return (
-    <div className="diff-panel">
+    <div className="diff-panel" style={style}>
       {lines.map((line, i) => {
         let className = 'diff-line diff-context';
         if (line.startsWith('+') && !line.startsWith('+++')) {

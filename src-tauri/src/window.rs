@@ -22,7 +22,7 @@ pub fn create_window(app: &AppHandle, file_path: Option<&str>) -> tauri::Result<
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
         })
-        .unwrap_or_else(|| "mdview".into());
+        .unwrap_or_else(|| "mpad".into());
 
     // Encode the file path as a query parameter so the frontend can pick it up
     // synchronously on mount via window.location.search.

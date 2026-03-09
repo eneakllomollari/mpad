@@ -144,6 +144,7 @@ body {
 
 .tiptap a:hover {
   border-bottom-color: var(--link-color);
+  cursor: pointer;
 }
 
 .tiptap hr {
@@ -228,28 +229,91 @@ body {
 .tiptap ul[data-type="taskList"] {
   list-style: none;
   padding-left: 0;
+  margin: 0.4em 0;
 }
 
 .tiptap ul[data-type="taskList"] li {
   display: flex;
-  align-items: flex-start;
-  gap: 0.5em;
+  align-items: baseline;
+  gap: 0.4em;
+  padding: 0;
+  margin: 0;
 }
 
 .tiptap ul[data-type="taskList"] li > label {
   flex-shrink: 0;
-  margin-top: 0.3em;
+  display: flex;
+  align-items: center;
+  height: 1.4em;
 }
 
 .tiptap ul[data-type="taskList"] li > label input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
   cursor: pointer;
-  accent-color: var(--accent);
   width: 14px;
   height: 14px;
+  border: 1.5px solid var(--text-muted);
+  border-radius: 3px;
+  background: transparent;
+  position: relative;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.tiptap ul[data-type="taskList"] li > label input[type="checkbox"]:hover {
+  border-color: var(--accent);
+}
+
+.tiptap ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tiptap ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0.5px;
+  width: 5px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
 }
 
 .tiptap ul[data-type="taskList"] li > div {
   flex: 1;
+  min-height: 1.4em;
+}
+
+/* Nested task lists */
+.tiptap ul[data-type="taskList"] ul[data-type="taskList"] {
+  margin: 0.1em 0 0.1em 1.2em;
+}
+
+/* Checked task items animate out */
+.tiptap ul[data-type="taskList"] li[data-checked="true"] {
+  opacity: 0;
+  max-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    opacity 300ms ease 400ms,
+    max-height 300ms ease 600ms,
+    margin 300ms ease 600ms,
+    padding 300ms ease 600ms;
+}
+
+/* Unchecked task items reappear smoothly on undo */
+.tiptap ul[data-type="taskList"] li:not([data-checked="true"]) {
+  opacity: 1;
+  max-height: 200px;
+  overflow: visible;
+  transition:
+    opacity 200ms ease,
+    max-height 200ms ease;
 }
 
 /* ── Tables ────────────────────────────────────────── */
@@ -411,6 +475,101 @@ body {
   overflow-y: auto;
 }
 
+/* ── Resize Handles ───────────────────────────────── */
+
+.resize-handle {
+  flex-shrink: 0;
+  background: transparent;
+  transition: background var(--transition-fast);
+}
+
+.resize-handle:hover,
+.resize-handle:active {
+  background: var(--accent-subtle);
+}
+
+.resize-handle-h {
+  width: 4px;
+  cursor: col-resize;
+}
+
+.resize-handle-v {
+  height: 4px;
+  cursor: row-resize;
+}
+
+/* ── Find Bar ─────────────────────────────────────── */
+
+.find-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.4em 0.75em;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  font-family: var(--font-ui);
+  font-size: 0.85em;
+}
+
+.find-bar-input {
+  flex: 1;
+  min-width: 120px;
+  max-width: 300px;
+  padding: 0.3em 0.5em;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 0.92em;
+  outline: none;
+}
+
+.find-bar-input:focus {
+  border-color: var(--accent);
+}
+
+.find-bar-count {
+  color: var(--text-muted);
+  font-size: 0.82em;
+  min-width: 3em;
+  text-align: center;
+}
+
+.find-bar-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.15em 0.35em;
+  border-radius: var(--radius-sm);
+  font-size: 0.8em;
+  line-height: 1;
+}
+
+.find-bar-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.find-bar-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* ── Search Highlights ────────────────────────────── */
+
+.search-match {
+  background: rgba(255, 200, 50, 0.35);
+  border-radius: 2px;
+}
+
+.search-match-active {
+  background: rgba(255, 160, 0, 0.6);
+  border-radius: 2px;
+  outline: 1px solid var(--accent);
+}
+
 /* ── Notification Bar ──────────────────────────────── */
 
 .notification-bar {
@@ -446,13 +605,13 @@ body {
 
 .diff-panel {
   width: 380px;
-  border-left: 1px solid var(--border-color);
   overflow-y: auto;
   background: var(--bg-secondary);
   font-family: var(--font-mono);
   font-size: 0.78em;
   padding: 0.75em 0;
   line-height: 1.55;
+  flex-shrink: 0;
 }
 
 .diff-line {
@@ -522,7 +681,6 @@ body {
 .sidebar {
   width: var(--sidebar-width);
   background: var(--sidebar-bg);
-  border-right: 1px solid var(--border-color);
   overflow-y: auto;
   flex-shrink: 0;
   font-size: 0.82em;
@@ -594,12 +752,12 @@ body {
 /* ── Git Log ───────────────────────────────────────── */
 
 .git-log-panel {
-  border-top: 1px solid var(--border-color);
   background: var(--bg-secondary);
-  max-height: 220px;
+  height: 220px;
   overflow-y: auto;
   font-size: 0.78em;
   font-family: var(--font-ui);
+  flex-shrink: 0;
 }
 
 .git-log-header {
@@ -838,4 +996,90 @@ body {
 
 .tiptap pre .hljs-strong {
   font-weight: 600;
+}
+
+/* ── Command Palette ──────────────────────────────── */
+
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 15vh;
+}
+
+.palette {
+  width: 480px;
+  max-width: 90vw;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.palette-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-family: var(--font-ui);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: none;
+  border-bottom: 1px solid var(--border-light);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.palette-list {
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.palette-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  border-left: 2px solid transparent;
+  transition: background var(--transition-fast);
+}
+
+.palette-item:hover,
+.palette-item.selected {
+  background: var(--accent-subtle);
+  border-left-color: var(--accent);
+}
+
+.palette-label {
+  color: var(--text-primary);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-command {
+  color: var(--accent);
+}
+
+.palette-hint {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.palette-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
 }

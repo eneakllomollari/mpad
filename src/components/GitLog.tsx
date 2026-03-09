@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 interface GitLogProps {
   repoPath: string | null;
   filePath: string | null;
+  style?: React.CSSProperties;
 }
 
 interface Commit {
@@ -13,7 +14,7 @@ interface Commit {
   date: string;
 }
 
-export function GitLog({ repoPath, filePath }: GitLogProps) {
+export function GitLog({ repoPath, filePath, style }: GitLogProps) {
   const [commits, setCommits] = useState<Commit[]>([]);
 
   useEffect(() => {
@@ -28,7 +29,7 @@ export function GitLog({ repoPath, filePath }: GitLogProps) {
   }, [repoPath, filePath]);
 
   return (
-    <div className="git-log-panel">
+    <div className="git-log-panel" style={style}>
       <div className="git-log-header">Commits</div>
       {commits.length === 0 ? (
         <div style={{ padding: '0.5em 1em', color: 'var(--text-muted)' }}>

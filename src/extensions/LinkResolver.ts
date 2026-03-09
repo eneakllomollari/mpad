@@ -8,11 +8,9 @@ export interface LinkResolverStorage {
 
 /**
  * TipTap extension that intercepts link clicks:
+ * - Cmd+Click (or Ctrl+Click) on a link opens it
  * - Relative .md links open in a new editor window
  * - External URLs and other file links open with the system default handler
- *
- * Uses editor storage for filePath so the extensions array stays stable
- * across file switches (avoids destroying/rebuilding the TipTap editor).
  */
 export const LinkResolver = Extension.create({
   name: 'linkResolver',
@@ -28,17 +26,34 @@ export const LinkResolver = Extension.create({
       new Plugin({
         key: new PluginKey('linkResolver'),
         props: {
-          handleClick(_view, _pos, event) {
-            const anchor = (event.target as HTMLElement).closest('a');
-            if (!anchor) return false;
+          handleDOMEvents: {
+            click(view, event) {
+              // Require Cmd/Ctrl+Click to follow links (standard editor behavior)
+              if (!event.metaKey && !event.ctrlKey) return false;
 
-            const href = anchor.getAttribute('href');
-            if (!href) return false;
+              const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
+              if (!pos) return false;
 
-            event.preventDefault();
+              const { doc } = view.state;
+              const resolved = doc.resolve(pos.pos);
+              const marks = resolved.marks();
+              const linkMark = marks.find((m) => m.type.name === 'link');
 
-            handleLinkClick(href, storage.filePath);
-            return true;
+              if (!linkMark) {
+                // Also check the node before the position
+                const node = resolved.nodeAfter ?? resolved.nodeBefore;
+                if (!node) return false;
+                const nodeLinkMark = node.marks.find((m) => m.type.name === 'link');
+                if (!nodeLinkMark) return false;
+                handleLinkClick(nodeLinkMark.attrs.href, storage.filePath);
+                event.preventDefault();
+                return true;
+              }
+
+              handleLinkClick(linkMark.attrs.href, storage.filePath);
+              event.preventDefault();
+              return true;
+            },
           },
         },
       }),
@@ -46,9 +61,14 @@ export const LinkResolver = Extension.create({
   },
 });
 
+const EXTERNAL_URL_RE = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
+const MARKDOWN_EXT_RE = /\.(md|markdown|mdown)$/i;
+
 function handleLinkClick(href: string, currentFilePath: string | null): void {
+  if (!href) return;
+
   // External URL (http, https, mailto, etc.)
-  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(href)) {
+  if (EXTERNAL_URL_RE.test(href)) {
     invoke('open_with_system', { target: href }).catch((err) =>
       console.error('Failed to open URL:', err),
     );
@@ -58,7 +78,7 @@ function handleLinkClick(href: string, currentFilePath: string | null): void {
   // Relative path - resolve against current file's directory
   const resolvedPath = resolvePath(href, currentFilePath);
 
-  if (resolvedPath && /\.(md|markdown|mdown)$/i.test(resolvedPath)) {
+  if (resolvedPath && MARKDOWN_EXT_RE.test(resolvedPath)) {
     invoke('open_md_in_window', { path: resolvedPath }).catch((err) =>
       console.error('Failed to open markdown file:', err),
     );
@@ -69,25 +89,18 @@ function handleLinkClick(href: string, currentFilePath: string | null): void {
   }
 }
 
-/**
- * Resolve a relative path against the directory of the current file.
- * Returns null if there's no current file to resolve against.
- */
 function resolvePath(
   relative: string,
   currentFilePath: string | null,
 ): string | null {
   if (!currentFilePath) return null;
 
-  // Strip any fragment/anchor from the relative path
   const pathOnly = relative.split('#')[0];
   if (!pathOnly) return null;
 
-  // Get directory of the current file
   const lastSlash = currentFilePath.lastIndexOf('/');
   const dir = lastSlash >= 0 ? currentFilePath.slice(0, lastSlash) : '.';
 
-  // Simple path resolution: join dir + relative, then normalize
   const parts = `${dir}/${pathOnly}`.split('/');
   const resolved: string[] = [];
   for (const part of parts) {

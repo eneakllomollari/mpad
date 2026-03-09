@@ -1,19 +1,22 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 
 import { Editor } from './components/Editor';
 import { GitStatusBar } from './components/GitStatusBar';
-import { DiffView } from './components/DiffView';
-import { Sidebar } from './components/Sidebar';
-import { GitLog } from './components/GitLog';
-import { QuickOpen } from './components/QuickOpen';
+import type { PaletteCommand } from './lib/fuzzyMatch';
+
+const DiffView = lazy(() => import('./components/DiffView').then(m => ({ default: m.DiffView })));
+const Sidebar = lazy(() => import('./components/Sidebar').then(m => ({ default: m.Sidebar })));
+const GitLog = lazy(() => import('./components/GitLog').then(m => ({ default: m.GitLog })));
+const CommandPalette = lazy(() => import('./components/CommandPalette').then(m => ({ default: m.CommandPalette })));
 
 import { useFileOperations } from './hooks/useFileOperations';
 import { useFileWatcher } from './hooks/useFileWatcher';
 import { useTheme } from './hooks/useTheme';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useResizable } from './hooks/useResizable';
 
 function App() {
   useTheme();
@@ -27,9 +30,27 @@ function App() {
   const [showDiff, setShowDiff] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showGitLog, setShowGitLog] = useState(false);
-  const [showQuickOpen, setShowQuickOpen] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
   const [diff, setDiff] = useState('');
-  const [externalChange, setExternalChange] = useState(false);
+  const [showFind, setShowFind] = useState(false);
+
+  const [zoom, setZoom] = useState(100);
+
+  // Cached markdown file list for command palette
+  const [mdFiles, setMdFiles] = useState<string[]>([]);
+
+  // Resizable panels
+  const sidebar = useResizable({ direction: 'horizontal', initialSize: 240, minSize: 160, maxSize: 500, side: 'left' });
+  const diffPanel = useResizable({ direction: 'horizontal', initialSize: 380, minSize: 200, maxSize: 700, side: 'right' });
+  const gitLog = useResizable({ direction: 'vertical', initialSize: 220, minSize: 100, maxSize: 500, side: 'bottom' });
+
+  // Refs for values needed in callbacks without stale closures
+  const showDiffRef = useRef(showDiff);
+  const filePathRef = useRef(filePath);
+  const repoPathRef = useRef(repoPath);
+  useEffect(() => { showDiffRef.current = showDiff; });
+  useEffect(() => { filePathRef.current = filePath; });
+  useEffect(() => { repoPathRef.current = repoPath; });
 
   // Load file content and find git repo (parallel)
   const loadFile = useCallback(
@@ -42,16 +63,33 @@ function App() {
       if (textResult.status === 'fulfilled') {
         setContent(textResult.value);
         setFilePath(path);
-        setExternalChange(false);
       } else {
         console.error('Failed to read file:', textResult.reason);
         return;
       }
 
-      setRepoPath(repoResult.status === 'fulfilled' ? repoResult.value : null);
+      const rp = repoResult.status === 'fulfilled' ? repoResult.value : null;
+      setRepoPath(rp);
+
+      // Refresh diff if panel is open (use ref for fresh showDiff value)
+      if (showDiffRef.current && rp) {
+        invoke<string>('git_file_diff', { repoPath: rp, filePath: path })
+          .then(setDiff)
+          .catch(() => setDiff(''));
+      }
     },
     [readFile],
   );
+
+  // Fetch markdown files when repo changes (cached for palette)
+  useEffect(() => {
+    if (!repoPath) return;
+    let stale = false;
+    invoke<string[]>('list_markdown_files', { root: repoPath })
+      .then((files) => { if (!stale) setMdFiles(files); })
+      .catch(() => { if (!stale) setMdFiles([]); });
+    return () => { stale = true; };
+  }, [repoPath]);
 
   // Listen for open-file events from Rust backend (used for multi-window / second instance)
   const loadFileRef = useRef(loadFile);
@@ -85,47 +123,52 @@ function App() {
       });
   }, []);
 
-  // Keep a ref to current content for the file watcher to compare against
+  // Keep refs for values needed in effects without causing re-runs
   const contentRef = useRef(content);
   useEffect(() => { contentRef.current = content; });
 
-  // External file change handler
-  const handleExternalChange = useCallback(() => {
-    setExternalChange(true);
+
+  // Auto-reload on external file changes
+  const handleExternalReload = useCallback((diskContent: string) => {
+    setContent(diskContent);
   }, []);
 
-  useFileWatcher(filePath, contentRef, handleExternalChange);
+  useFileWatcher(filePath, contentRef, handleExternalReload);
 
-  // Reload file from disk
-  const reloadFile = useCallback(async () => {
-    if (filePath) {
-      try {
-        const text = await readFile(filePath);
-        setContent(text);
-        setExternalChange(false);
-      } catch (err) {
-        console.error('Failed to reload file:', err);
-      }
+  // Fetch diff for current file
+  const fetchDiff = useCallback(async (fp: string, rp: string) => {
+    try {
+      const d = await invoke<string>('git_file_diff', { repoPath: rp, filePath: fp });
+      setDiff(d);
+    } catch {
+      setDiff('');
     }
-  }, [filePath, readFile]);
+  }, []);
+
+  // Refresh diff if panel is open (reads refs for fresh values)
+  const refreshDiff = useCallback(() => {
+    if (showDiffRef.current && filePathRef.current && repoPathRef.current) {
+      fetchDiff(filePathRef.current, repoPathRef.current);
+    }
+  }, [fetchDiff]);
 
   // Editor update handler
   const handleEditorUpdate = useCallback(
     (md: string) => {
       setContent(md);
       if (filePath) {
-        save(filePath, md);
+        save(filePath, md, refreshDiff);
       }
     },
-    [filePath, save],
+    [filePath, save, refreshDiff],
   );
 
   // Force save (Cmd+S) — write immediately, no debounce
   const handleSave = useCallback(() => {
     if (filePath) {
-      saveImmediate(filePath, contentRef.current);
+      saveImmediate(filePath, contentRef.current).then(refreshDiff);
     }
-  }, [filePath, saveImmediate]);
+  }, [filePath, saveImmediate, refreshDiff]);
 
   // Open file dialog (Cmd+O)
   const handleOpen = useCallback(async () => {
@@ -148,80 +191,108 @@ function App() {
   // Toggle diff
   const handleToggleDiff = useCallback(async () => {
     if (!showDiff && filePath && repoPath) {
-      try {
-        const d = await invoke<string>('git_file_diff', { repoPath, filePath });
-        setDiff(d);
-      } catch {
-        setDiff('');
-      }
+      await fetchDiff(filePath, repoPath);
     }
     setShowDiff((v) => !v);
-  }, [showDiff, filePath, repoPath]);
+  }, [showDiff, filePath, repoPath, fetchDiff]);
+
+
+  // Zoom handlers
+  const handleZoomIn = useCallback(() => setZoom((z) => Math.min(z + 10, 200)), []);
+  const handleZoomOut = useCallback(() => setZoom((z) => Math.max(z - 10, 60)), []);
+  const handleZoomReset = useCallback(() => setZoom(100), []);
+
+  // Palette commands
+  const paletteCommands: PaletteCommand[] = useMemo(
+    () => [
+      { id: 'save', label: 'Save', shortcut: '⌘S', action: handleSave },
+      { id: 'open', label: 'Open File', shortcut: '⌘O', action: handleOpen },
+      { id: 'source', label: 'Toggle Source', shortcut: '⌘/', action: () => setShowSource((v) => !v) },
+      { id: 'diff', label: 'Toggle Diff', shortcut: '⌘D', action: handleToggleDiff },
+      { id: 'sidebar', label: 'Toggle Sidebar', shortcut: '⌘B', action: () => setShowSidebar((v) => !v) },
+      { id: 'gitlog', label: 'Toggle Git Log', shortcut: '⌘L', action: () => setShowGitLog((v) => !v) },
+      { id: 'zoomin', label: 'Zoom In', shortcut: '⌘+', action: handleZoomIn },
+      { id: 'zoomout', label: 'Zoom Out', shortcut: '⌘-', action: handleZoomOut },
+      { id: 'zoomreset', label: 'Zoom Reset', shortcut: '⌘0', action: handleZoomReset },
+    ],
+    [handleSave, handleOpen, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
+  );
 
   // Keyboard shortcuts
   const shortcutHandlers = useMemo(
     () => ({
       onSave: handleSave,
       onOpen: handleOpen,
-      onQuickOpen: () => setShowQuickOpen((v) => !v),
       onToggleSource: () => setShowSource((v) => !v),
       onToggleDiff: handleToggleDiff,
       onToggleSidebar: () => setShowSidebar((v) => !v),
       onToggleGitLog: () => setShowGitLog((v) => !v),
+      onToggleCheatsheet: () => setShowPalette((v) => !v),
+      onFind: () => setShowFind((v) => !v),
+      onZoomIn: handleZoomIn,
+      onZoomOut: handleZoomOut,
+      onZoomReset: handleZoomReset,
     }),
-    [handleSave, handleOpen, handleToggleDiff],
+    [handleSave, handleOpen, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
   );
 
   useKeyboardShortcuts(shortcutHandlers);
 
   return (
     <div className="app-layout">
-      <Sidebar
-        repoPath={repoPath}
-        currentFile={filePath}
-        onFileSelect={loadFile}
-        visible={showSidebar}
-      />
+      {showSidebar && (
+        <Suspense>
+          <Sidebar
+            repoPath={repoPath}
+            currentFile={filePath}
+            onFileSelect={loadFile}
+            visible={showSidebar}
+            style={{ width: sidebar.size }}
+          />
+          <div className="resize-handle resize-handle-h" onMouseDown={sidebar.onMouseDown} />
+        </Suspense>
+      )}
 
       <div className="app-main">
-        {externalChange && (
-          <div className="notification-bar">
-            <span>File changed on disk</span>
-            <div style={{ display: 'flex', gap: '0.5em' }}>
-              <button onClick={reloadFile}>Reload</button>
-              <button onClick={() => setExternalChange(false)}>Dismiss</button>
-            </div>
-          </div>
-        )}
-
         <div className="editor-area" style={{ display: 'flex' }}>
-          <div style={{ flex: 1, overflow: 'auto' }}>
+          <div style={{ flex: 1, overflow: 'auto', fontSize: `${zoom}%` }}>
             {filePath ? (
               <Editor
                 content={content}
                 onUpdate={handleEditorUpdate}
                 showSource={showSource}
                 filePath={filePath}
+                showFind={showFind}
+                onCloseFindBar={() => setShowFind(false)}
               />
             ) : (
               <div className="empty-state">
                 <span>
                   Open a file with{' '}
-                  <kbd style={{ opacity: 0.7 }}>Cmd+O</kbd> or pass a path as
+                  <kbd style={{ opacity: 0.7 }}>⌘K</kbd> or pass a path as
                   argument
                 </span>
               </div>
             )}
           </div>
 
-          <DiffView diff={diff} visible={showDiff} />
+          {showDiff && (
+            <Suspense>
+              <div className="resize-handle resize-handle-h" onMouseDown={diffPanel.onMouseDown} />
+              <DiffView diff={diff} visible={showDiff} style={{ width: diffPanel.size }} />
+            </Suspense>
+          )}
         </div>
 
         {showGitLog && (
-          <GitLog
-            repoPath={repoPath}
-            filePath={filePath}
-          />
+          <Suspense>
+            <div className="resize-handle resize-handle-v" onMouseDown={gitLog.onMouseDown} />
+            <GitLog
+              repoPath={repoPath}
+              filePath={filePath}
+              style={{ height: gitLog.size }}
+            />
+          </Suspense>
         )}
 
         <GitStatusBar
@@ -230,12 +301,16 @@ function App() {
         />
       </div>
 
-      {showQuickOpen && (
-        <QuickOpen
-          repoPath={repoPath}
-          onSelect={loadFile}
-          onClose={() => setShowQuickOpen(false)}
-        />
+      {showPalette && (
+        <Suspense>
+          <CommandPalette
+            commands={paletteCommands}
+            files={mdFiles}
+            repoPath={repoPath}
+            onFileSelect={loadFile}
+            onClose={() => setShowPalette(false)}
+          />
+        </Suspense>
       )}
     </div>
   );

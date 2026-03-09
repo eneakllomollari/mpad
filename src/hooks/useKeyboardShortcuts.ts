@@ -1,54 +1,79 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
-export interface ShortcutHandlers {
+interface ShortcutHandlers {
   onSave?: () => void;
   onOpen?: () => void;
-  onQuickOpen?: () => void;
   onToggleSource?: () => void;
   onToggleDiff?: () => void;
   onToggleSidebar?: () => void;
   onToggleGitLog?: () => void;
+  onToggleCheatsheet?: () => void;
+  onFind?: () => void;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onZoomReset?: () => void;
 }
 
 export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
+  const ref = useRef(handlers);
+  useEffect(() => { ref.current = handlers; });
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
+      const h = ref.current;
 
       switch (e.key.toLowerCase()) {
         case 's':
           e.preventDefault();
-          handlers.onSave?.();
+          h.onSave?.();
           break;
         case 'o':
           e.preventDefault();
-          handlers.onOpen?.();
-          break;
-        case 'p':
-          e.preventDefault();
-          handlers.onQuickOpen?.();
+          h.onOpen?.();
           break;
         case '/':
           e.preventDefault();
-          handlers.onToggleSource?.();
+          h.onToggleSource?.();
           break;
         case 'd':
           e.preventDefault();
-          handlers.onToggleDiff?.();
+          h.onToggleDiff?.();
           break;
         case 'b':
           e.preventDefault();
-          handlers.onToggleSidebar?.();
+          h.onToggleSidebar?.();
           break;
         case 'l':
           e.preventDefault();
-          handlers.onToggleGitLog?.();
+          h.onToggleGitLog?.();
+          break;
+        case 'k':
+          e.preventDefault();
+          h.onToggleCheatsheet?.();
+          break;
+        case 'f':
+          e.preventDefault();
+          h.onFind?.();
+          break;
+        case '=':
+        case '+':
+          e.preventDefault();
+          h.onZoomIn?.();
+          break;
+        case '-':
+          e.preventDefault();
+          h.onZoomOut?.();
+          break;
+        case '0':
+          e.preventDefault();
+          h.onZoomReset?.();
           break;
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [handlers]);
+  }, []);
 }

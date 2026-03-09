@@ -7,10 +7,10 @@ const DEBOUNCE_MS = 500;
 export function useFileWatcher(
   filePath: string | null,
   currentContent: React.RefObject<string>,
-  onExternalChange: () => void,
+  onReload: (content: string) => void,
 ) {
-  const callbackRef = useRef(onExternalChange);
-  useEffect(() => { callbackRef.current = onExternalChange; });
+  const callbackRef = useRef(onReload);
+  useEffect(() => { callbackRef.current = onReload; });
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -36,7 +36,7 @@ export function useFileWatcher(
               const diskContent = await invoke<string>('read_file', { path: watchedPath });
               if (cancelled) return;
               if (diskContent !== currentContent.current) {
-                callbackRef.current();
+                callbackRef.current(diskContent);
               }
             } catch {
               // File might be temporarily unavailable during write — ignore
@@ -54,7 +54,7 @@ export function useFileWatcher(
       }
     };
 
-    setup();
+    setup().catch(() => {});
 
     return () => {
       cancelled = true;

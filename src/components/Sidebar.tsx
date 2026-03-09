@@ -6,11 +6,12 @@ interface SidebarProps {
   currentFile: string | null;
   onFileSelect: (path: string) => void;
   visible: boolean;
+  style?: React.CSSProperties;
 }
 
-interface FileEntry {
+interface GitEntry {
   path: string;
-  status: string; // "clean" | "modified" | "untracked" | "deleted" | "new"
+  status: string;
 }
 
 interface TreeNode {
@@ -21,39 +22,65 @@ interface TreeNode {
   children: TreeNode[];
 }
 
-function buildTree(files: FileEntry[]): TreeNode[] {
-  const root: TreeNode[] = [];
+function sortNodes(a: TreeNode, b: TreeNode): number {
+  if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+  return a.name.localeCompare(b.name);
+}
 
-  for (const file of files) {
-    const parts = file.path.split('/');
-    let current = root;
+function buildTree(mdFiles: string[], gitStatusMap: Map<string, string>): TreeNode[] {
+  const root: TreeNode[] = [];
+  const lookup = new Map<string, { children: TreeNode[]; childMap: Map<string, number> }>();
+
+  // Root-level lookup
+  const rootChildMap = new Map<string, number>();
+  lookup.set('', { children: root, childMap: rootChildMap });
+
+  for (const filePath of mdFiles) {
+    const parts = filePath.split('/');
+    let parentKey = '';
+    let parent = lookup.get('')!;
 
     for (let i = 0; i < parts.length; i++) {
       const name = parts[i];
       const isLast = i === parts.length - 1;
-      const fullPath = parts.slice(0, i + 1).join('/');
+      const fullPath = i === 0 ? name : `${parentKey}/${name}`;
 
-      let existing = current.find((n) => n.name === name);
-      if (!existing) {
-        existing = {
+      const existingIdx = parent.childMap.get(name);
+      if (existingIdx == null) {
+        const node: TreeNode = {
           name,
           fullPath,
           isDir: !isLast,
-          status: isLast ? file.status : '',
+          status: isLast ? (gitStatusMap.get(filePath) ?? '') : '',
           children: [],
         };
-        current.push(existing);
+        parent.childMap.set(name, parent.children.length);
+        parent.children.push(node);
+
+        if (!isLast) {
+          const childMap = new Map<string, number>();
+          lookup.set(fullPath, { children: node.children, childMap });
+        }
+        parent = { children: node.children, childMap: lookup.get(fullPath)?.childMap ?? new Map() };
+      } else {
+        const existing = parent.children[existingIdx];
+        const cached = lookup.get(fullPath);
+        parent = cached ?? { children: existing.children, childMap: new Map() };
       }
-      current = existing.children;
+      parentKey = fullPath;
     }
   }
 
-  return root;
-}
+  // Sort all levels in-place
+  const sortAll = (nodes: TreeNode[]) => {
+    nodes.sort(sortNodes);
+    for (const n of nodes) {
+      if (n.isDir && n.children.length > 0) sortAll(n.children);
+    }
+  };
+  sortAll(root);
 
-function sortNodes(a: TreeNode, b: TreeNode): number {
-  if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
-  return a.name.localeCompare(b.name);
+  return root;
 }
 
 function statusColor(status: string): string | undefined {
@@ -74,16 +101,21 @@ function TreeItem({
   node,
   depth,
   currentFile,
-  repoPath,
+  rootPath,
   onFileSelect,
 }: {
   node: TreeNode;
   depth: number;
   currentFile: string | null;
-  repoPath: string;
+  rootPath: string;
   onFileSelect: (path: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(depth < 1);
+  const [expanded, setExpanded] = useState(() => {
+    if (depth < 1) return true;
+    // Auto-expand agent/skill directories
+    const root = node.fullPath.split('/')[0];
+    return root === '.claude' || root === '.cursor' || root === '.agents';
+  });
   const paddingLeft = `${0.75 + depth * 0.75}em`;
 
   if (node.isDir) {
@@ -99,14 +131,13 @@ function TreeItem({
         </div>
         {expanded &&
           node.children
-            .slice().sort(sortNodes)
             .map((child) => (
               <TreeItem
                 key={child.fullPath}
                 node={child}
                 depth={depth + 1}
                 currentFile={currentFile}
-                repoPath={repoPath}
+                rootPath={rootPath}
                 onFileSelect={onFileSelect}
               />
             ))}
@@ -114,24 +145,21 @@ function TreeItem({
     );
   }
 
-  const isMarkdown = /\.(md|markdown|mdown)$/i.test(node.name);
-  // repoPath from git2 workdir() may already end with '/', avoid double slash
-  const base = repoPath.endsWith('/') ? repoPath : `${repoPath}/`;
+  const base = rootPath.endsWith('/') ? rootPath : `${rootPath}/`;
   const absolutePath = `${base}${node.fullPath}`;
   const isActive = currentFile === absolutePath;
+  const dotColor = statusColor(node.status);
 
   return (
     <div
       className={`tree-item ${isActive ? 'active' : ''}`}
-      style={{ paddingLeft, opacity: isMarkdown ? 1 : 0.5 }}
-      onClick={() => {
-        if (isMarkdown) onFileSelect(absolutePath);
-      }}
+      style={{ paddingLeft }}
+      onClick={() => onFileSelect(absolutePath)}
     >
-      {node.status && (
+      {dotColor && (
         <span
           className="status-dot"
-          style={{ background: statusColor(node.status) }}
+          style={{ background: dotColor }}
         />
       )}
       {node.name}
@@ -144,27 +172,48 @@ export function Sidebar({
   currentFile,
   onFileSelect,
   visible,
+  style,
 }: SidebarProps) {
-  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [mdFiles, setMdFiles] = useState<string[]>([]);
+  const [gitStatusMap, setGitStatusMap] = useState(() => new Map<string, string>());
 
   useEffect(() => {
     if (!repoPath) return;
 
     let stale = false;
-    invoke<FileEntry[]>('git_repo_tree', { repoPath })
-      .then((entries) => { if (!stale) setFiles(entries); })
-      .catch(() => { if (!stale) setFiles([]); });
+
+    // Fetch markdown files and git status in parallel
+    const mdPromise = invoke<string[]>('list_markdown_files', { root: repoPath });
+    const gitPromise = invoke<GitEntry[]>('git_repo_tree', { repoPath }).catch(() => [] as GitEntry[]);
+
+    Promise.all([mdPromise, gitPromise]).then(([files, gitEntries]) => {
+      if (stale) return;
+      setMdFiles(files);
+
+      const statusMap = new Map<string, string>();
+      for (const entry of gitEntries) {
+        if (entry.status !== 'clean') {
+          statusMap.set(entry.path, entry.status);
+        }
+      }
+      setGitStatusMap(statusMap);
+    }).catch(() => {
+      if (!stale) {
+        setMdFiles([]);
+        setGitStatusMap(new Map());
+      }
+    });
 
     return () => { stale = true; };
   }, [repoPath]);
 
-  const tree = useMemo(() => buildTree(files), [files]);
+  const tree = useMemo(() => buildTree(mdFiles, gitStatusMap), [mdFiles, gitStatusMap]);
 
   if (!visible) return null;
 
   return (
-    <div className="sidebar">
-      <div className="sidebar-header">Files</div>
+    <div className="sidebar" style={style}>
+      <div className="sidebar-header">{repoPath ? repoPath.split('/').filter(Boolean).pop() : 'Files'}</div>
       <div className="file-tree">
         {tree.length === 0 && !repoPath && (
           <div style={{ padding: '0.75em', color: 'var(--text-muted)' }}>
@@ -172,14 +221,13 @@ export function Sidebar({
           </div>
         )}
         {tree
-          .slice().sort(sortNodes)
           .map((node) => (
             <TreeItem
               key={node.fullPath}
               node={node}
               depth={0}
               currentFile={currentFile}
-              repoPath={repoPath ?? ''}
+              rootPath={repoPath ?? ''}
               onFileSelect={onFileSelect}
             />
           ))}

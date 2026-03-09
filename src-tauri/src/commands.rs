@@ -49,6 +49,52 @@ pub fn git_repo_tree(repo_path: String) -> Result<Vec<TreeEntry>, String> {
     git::repo_tree(&repo_path).map_err(|e| e.to_string())
 }
 
+/// Recursively find all markdown files under a directory (includes dotdirs like .claude/).
+#[tauri::command]
+pub fn list_markdown_files(root: String) -> Result<Vec<String>, String> {
+    use std::path::Path;
+
+    fn walk(dir: &Path, root: &Path, out: &mut Vec<String>) -> std::io::Result<()> {
+        let entries = match std::fs::read_dir(dir) {
+            Ok(e) => e,
+            Err(_) => return Ok(()), // skip unreadable dirs
+        };
+        for entry in entries {
+            let entry = entry?;
+            let path = entry.path();
+            let name = entry.file_name();
+            let name_str = name.to_string_lossy();
+
+            // Skip common heavy directories that never contain useful markdown
+            if path.is_dir() {
+                if matches!(
+                    name_str.as_ref(),
+                    "node_modules" | "target" | ".git" | "dist" | "build" | "__pycache__"
+                    | ".venv" | ".env" | ".pytest_cache"
+                ) {
+                    continue;
+                }
+                walk(&path, root, out)?;
+            } else if let Some(ext) = path.extension() {
+                let ext = ext.to_string_lossy().to_ascii_lowercase();
+                if ext == "md" || ext == "markdown" || ext == "mdown" {
+                    if let Ok(rel) = path.strip_prefix(root) {
+                        out.push(rel.to_string_lossy().to_string());
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    let root_path = Path::new(&root);
+    let mut files = Vec::new();
+    walk(root_path, root_path, &mut files)
+        .map_err(|e| format!("Failed to walk {}: {}", root, e))?;
+    files.sort();
+    Ok(files)
+}
+
 /// Open a markdown file in a new editor window.
 #[tauri::command]
 pub fn open_md_in_window(app: tauri::AppHandle, path: String) -> Result<(), String> {

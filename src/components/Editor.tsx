@@ -12,6 +12,10 @@ import { FrontmatterNode } from '../extensions/FrontmatterNode';
 import { XmlBlockNode } from '../extensions/XmlBlockNode';
 import { LinkResolver } from '../extensions/LinkResolver';
 import type { LinkResolverStorage } from '../extensions/LinkResolver';
+import { preprocessContent, postprocessContent } from '../lib/contentProcessing';
+import type { Processed } from '../lib/contentProcessing';
+import { SearchHighlight } from '../extensions/SearchHighlight';
+import { FindBar } from './FindBar';
 
 const lowlight = createLowlight(common);
 
@@ -50,67 +54,8 @@ interface EditorProps {
   onUpdate: (md: string) => void;
   showSource: boolean;
   filePath: string | null;
-}
-
-const XML_BLOCK_RE =
-  /^<([a-zA-Z][a-zA-Z0-9_-]*)>\s*\n([\s\S]*?)\n<\/\1>\s*$/gm;
-
-interface XmlBlock {
-  placeholder: string;
-  tagName: string;
-  content: string;
-}
-
-interface Processed {
-  frontmatter: string | null;
-  body: string;
-  xmlBlocks: XmlBlock[];
-}
-
-const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---(?:\n|$)/;
-
-function preprocessContent(raw: string): Processed {
-  let frontmatter: string | null = null;
-  let body = raw;
-
-  const fmMatch = raw.match(FRONTMATTER_RE);
-  if (fmMatch && fmMatch[1].trim()) {
-    frontmatter = fmMatch[1];
-    body = raw.slice(fmMatch[0].length);
-  }
-
-  const xmlBlocks: XmlBlock[] = [];
-  let idx = 0;
-
-  body = body.replace(XML_BLOCK_RE, (_match, tagName: string, content: string) => {
-    const placeholder = `<!--xmlblock:${idx}-->`;
-    xmlBlocks.push({ placeholder, tagName, content });
-    idx++;
-    return placeholder;
-  });
-
-  return { frontmatter, body, xmlBlocks };
-}
-
-function postprocessContent(
-  md: string,
-  frontmatter: string | null,
-  xmlBlocks: XmlBlock[],
-): string {
-  let result = md;
-
-  for (const block of xmlBlocks) {
-    result = result.replace(
-      block.placeholder,
-      `<${block.tagName}>\n${block.content}\n</${block.tagName}>`,
-    );
-  }
-
-  if (frontmatter) {
-    result = `---\n${frontmatter}\n---\n${result}`;
-  }
-
-  return result;
+  showFind: boolean;
+  onCloseFindBar: () => void;
 }
 
 // --- Slash command menu items ---
@@ -222,7 +167,7 @@ const bubbleItems: { mark: string; label: React.ReactNode; command: string }[] =
   { mark: 'highlight', label: 'H', command: 'toggleHighlight' },
 ];
 
-export function Editor({ content, onUpdate, showSource, filePath }: EditorProps) {
+export function Editor({ content, onUpdate, showSource, filePath, showFind, onCloseFindBar }: EditorProps) {
   const processedRef = useRef<Processed>({
     frontmatter: null,
     body: '',
@@ -259,6 +204,7 @@ export function Editor({ content, onUpdate, showSource, filePath }: EditorProps)
       XmlBlockNode,
       LinkResolver,
       HeadingCycle,
+      SearchHighlight,
     ],
     [],
   );
@@ -311,21 +257,36 @@ export function Editor({ content, onUpdate, showSource, filePath }: EditorProps)
   }, [editor, filePath]);
 
   useEffect(() => {
+    if (showSource) return; // Don't sync to editor while in source mode
     if (content !== lastKnownContent.current && editor && !editor.isDestroyed) {
       lastKnownContent.current = content;
       const p = preprocessContent(content);
       processedRef.current = p;
       editor.commands.setContent(p.body);
     }
-  }, [content, editor]);
+  }, [content, editor, showSource]);
 
   const handleSourceChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      lastKnownContent.current = e.target.value;
       onUpdate(e.target.value);
     },
     [onUpdate],
   );
+
+  // When switching from source back to WYSIWYG, sync editor with current content
+  const prevShowSourceRef = useRef(showSource);
+  useEffect(() => {
+    const wasSource = prevShowSourceRef.current;
+    prevShowSourceRef.current = showSource;
+    if (wasSource && !showSource && editor && !editor.isDestroyed) {
+      const p = preprocessContent(content);
+      processedRef.current = p;
+      lastKnownContent.current = content;
+      editor.commands.setContent(p.body);
+    }
+  // content and editor are intentionally excluded — only trigger on showSource transition
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showSource]);
 
   if (showSource) {
     return (
@@ -375,6 +336,7 @@ export function Editor({ content, onUpdate, showSource, filePath }: EditorProps)
           </div>
         </BubbleMenu>
       )}
+      <FindBar editor={editor} visible={showFind} onClose={onCloseFindBar} />
       <EditorContent editor={editor} />
       {showSlashMenu && editor && (
         <SlashMenu editor={editor} onClose={() => setShowSlashMenu(false)} />

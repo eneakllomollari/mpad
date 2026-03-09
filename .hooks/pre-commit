@@ -7,6 +7,9 @@ bun run typecheck
 echo "==> ESLint..."
 bun run lint
 
+echo "==> OxLint..."
+bun run oxlint
+
 echo "==> Rust check..."
 cd src-tauri
 PATH="$HOME/.cargo/bin:$PATH" cargo check --quiet 2>&1

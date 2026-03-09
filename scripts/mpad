@@ -1,11 +1,11 @@
 #!/bin/bash
-# CLI wrapper for mdview — symlink to /usr/local/bin/mdview
-# Usage: mdview [file.md]
+# CLI wrapper for mpad — symlink to /usr/local/bin/mpad
+# Usage: mpad [file.md]
 
 set -euo pipefail
 
-APP_BUNDLE="/Applications/mdview.app"
-DEV_BUNDLE="$(dirname "$0")/../src-tauri/target/release/bundle/macos/mdview.app"
+APP_BUNDLE="/Applications/mpad.app"
+DEV_BUNDLE="$(dirname "$0")/../src-tauri/target/release/bundle/macos/mpad.app"
 
 # Resolve file argument to absolute path
 FILE_ARG=""
@@ -23,7 +23,7 @@ if [ -d "$APP_BUNDLE" ]; then
 elif [ -d "$DEV_BUNDLE" ]; then
   TARGET="$DEV_BUNDLE"
 else
-  echo "mdview: app bundle not found." >&2
+  echo "mpad: app bundle not found." >&2
   echo "  Expected at: $APP_BUNDLE" >&2
   echo "  Or build with: cd $(dirname "$0")/.. && bun tauri build" >&2
   exit 1

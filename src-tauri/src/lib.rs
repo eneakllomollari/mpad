@@ -34,6 +34,7 @@ pub fn run() {
             commands::get_initial_file,
             commands::read_file,
             commands::write_file,
+            commands::list_markdown_files,
             commands::open_md_in_window,
             commands::open_with_system,
         ])
@@ -57,7 +58,7 @@ pub fn run() {
                             let file_name = abs_path
                                 .file_name()
                                 .map(|n| n.to_string_lossy().to_string())
-                                .unwrap_or_else(|| "mdview".into());
+                                .unwrap_or_else(|| "mpad".into());
 
                             let path_str = abs_path.to_string_lossy().to_string();
 
