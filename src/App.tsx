@@ -18,6 +18,8 @@ import { useTheme } from './hooks/useTheme';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useResizable } from './hooks/useResizable';
 
+const modKey = navigator.platform.startsWith('Mac') ? '⌘' : 'Ctrl+';
+
 function App() {
   useTheme();
 
@@ -205,15 +207,15 @@ function App() {
   // Palette commands
   const paletteCommands: PaletteCommand[] = useMemo(
     () => [
-      { id: 'save', label: 'Save', shortcut: '⌘S', action: handleSave },
-      { id: 'open', label: 'Open File', shortcut: '⌘O', action: handleOpen },
-      { id: 'source', label: 'Toggle Source', shortcut: '⌘/', action: () => setShowSource((v) => !v) },
-      { id: 'diff', label: 'Toggle Diff', shortcut: '⌘D', action: handleToggleDiff },
-      { id: 'sidebar', label: 'Toggle Sidebar', shortcut: '⌘B', action: () => setShowSidebar((v) => !v) },
-      { id: 'gitlog', label: 'Toggle Git Log', shortcut: '⌘L', action: () => setShowGitLog((v) => !v) },
-      { id: 'zoomin', label: 'Zoom In', shortcut: '⌘+', action: handleZoomIn },
-      { id: 'zoomout', label: 'Zoom Out', shortcut: '⌘-', action: handleZoomOut },
-      { id: 'zoomreset', label: 'Zoom Reset', shortcut: '⌘0', action: handleZoomReset },
+      { id: 'save', label: 'Save', shortcut: `${modKey}S`, action: handleSave },
+      { id: 'open', label: 'Open File', shortcut: `${modKey}O`, action: handleOpen },
+      { id: 'source', label: 'Toggle Source', shortcut: `${modKey}/`, action: () => setShowSource((v) => !v) },
+      { id: 'diff', label: 'Toggle Diff', shortcut: `${modKey}D`, action: handleToggleDiff },
+      { id: 'sidebar', label: 'Toggle Sidebar', shortcut: `${modKey}B`, action: () => setShowSidebar((v) => !v) },
+      { id: 'gitlog', label: 'Toggle Git Log', shortcut: `${modKey}L`, action: () => setShowGitLog((v) => !v) },
+      { id: 'zoomin', label: 'Zoom In', shortcut: `${modKey}+`, action: handleZoomIn },
+      { id: 'zoomout', label: 'Zoom Out', shortcut: `${modKey}-`, action: handleZoomOut },
+      { id: 'zoomreset', label: 'Zoom Reset', shortcut: `${modKey}0`, action: handleZoomReset },
     ],
     [handleSave, handleOpen, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
   );
@@ -269,7 +271,7 @@ function App() {
               <div className="empty-state">
                 <span>
                   Open a file with{' '}
-                  <kbd style={{ opacity: 0.7 }}>⌘K</kbd> or pass a path as
+                  <kbd style={{ opacity: 0.7 }}>{modKey}K</kbd> or pass a path as
                   argument
                 </span>
               </div>

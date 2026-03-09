@@ -6,7 +6,7 @@ authors = ["Enea Kllomollari"]
 license = "MIT"
 repository = ""
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.85"
 
 [lib]
 name = "mpad_lib"
