@@ -124,20 +124,27 @@ function SlashMenu({ editor, onClose }: { editor: ReturnType<typeof useEditor>; 
     return () => window.removeEventListener('keydown', handler, true);
   }, [editor, onClose]);
 
-  // Position near cursor — computed once on mount
+  // Position near cursor — flip upward if it would overflow the viewport
   const pos = useMemo(() => {
     if (!editor) return null;
     const { from } = editor.state.selection;
     const coords = editor.view.coordsAtPos(from);
-    return { top: coords.bottom + 4, left: coords.left };
-  }, [editor]);
+    const menuHeight = Math.min(filtered.length * 34 + 8, 320);
+    const spaceBelow = window.innerHeight - coords.bottom - 8;
+    if (spaceBelow < menuHeight && coords.top > menuHeight) {
+      return { bottom: window.innerHeight - coords.top + 4, left: coords.left, anchor: 'bottom' as const };
+    }
+    return { top: coords.bottom + 4, left: coords.left, anchor: 'top' as const };
+  }, [editor, filtered.length]);
 
   if (!pos || filtered.length === 0) return null;
 
   return (
     <div
       className="slash-menu"
-      style={{ top: pos.top, left: pos.left }}
+      style={pos.anchor === 'bottom'
+        ? { bottom: pos.bottom, left: pos.left }
+        : { top: pos.top, left: pos.left }}
     >
       {query && <div className="slash-menu-query">/{query}</div>}
       {filtered.map((item, i) => (
@@ -200,6 +207,7 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
         html: true,
         transformPastedText: true,
         transformCopiedText: true,
+        tightLists: true,
       }),
       ...gfmExtensions,
       FrontmatterNode,
