@@ -2,7 +2,6 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition 
 import { filterItems } from '../lib/fuzzyMatch';
 import type { PaletteCommand } from '../lib/fuzzyMatch';
 
-export type { PaletteCommand };
 
 interface Props {
   commands: PaletteCommand[];

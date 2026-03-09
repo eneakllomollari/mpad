@@ -23,7 +23,7 @@ export function fuzzyMatch(query: string, target: string): { match: boolean; sco
   return qi === lq.length ? { match: true, score } : { match: false, score: 0 };
 }
 
-export interface FilterResult {
+interface FilterResult {
   type: 'command' | 'file';
   label: string;
   hint?: string;

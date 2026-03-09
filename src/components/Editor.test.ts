@@ -71,7 +71,8 @@ describe('preprocessContent', () => {
     expect(result.xmlBlocks).toHaveLength(1);
     expect(result.xmlBlocks[0].tagName).toBe('example');
     expect(result.xmlBlocks[0].content).toBe('some content');
-    expect(result.body).toContain('<!--xmlblock:0-->');
+    expect(result.body).toContain('data-type="xmlBlock"');
+    expect(result.body).toContain('data-tag-name="example"');
   });
 
   it('handles multiple XML blocks', () => {
@@ -88,25 +89,25 @@ describe('preprocessContent', () => {
     expect(result.frontmatter).toBe('title: Test');
     expect(result.xmlBlocks).toHaveLength(1);
     expect(result.body).toContain('# Heading');
-    expect(result.body).toContain('<!--xmlblock:0-->');
+    expect(result.body).toContain('data-type="xmlBlock"');
   });
 });
 
 describe('postprocessContent', () => {
   it('restores frontmatter', () => {
-    const result = postprocessContent('# Body', 'title: Hello', []);
-    expect(result).toBe('---\ntitle: Hello\n---\n# Body');
+    const result = postprocessContent('\n# Body', 'title: Hello', []);
+    expect(result).toBe('---\ntitle: Hello\n---\n\n# Body\n');
   });
 
   it('restores XML blocks', () => {
-    const xmlBlocks = [{ placeholder: '<!--xmlblock:0-->', tagName: 'example', content: 'some content' }];
-    const result = postprocessContent('text\n\n<!--xmlblock:0-->', null, xmlBlocks);
+    const xmlBlocks = [{ placeholder: '%%XMLBLOCK:0%%', tagName: 'example', content: 'some content' }];
+    const result = postprocessContent('text\n\n%%XMLBLOCK:0%%', null, xmlBlocks);
     expect(result).toContain('<example>\nsome content\n</example>');
-    expect(result).not.toContain('<!--xmlblock');
+    expect(result).not.toContain('%%XMLBLOCK');
   });
 
   it('round-trips with preprocessContent', () => {
-    const original = '---\ntitle: Test\n---\n# Heading\n\nSome text\n\n<example>\nxml content\n</example>';
+    const original = '---\ntitle: Test\n---\n\n# Heading\n\nSome text\n\n<example>\nxml content\n</example>\n';
     const { frontmatter, body, xmlBlocks } = preprocessContent(original);
     const restored = postprocessContent(body, frontmatter, xmlBlocks);
     expect(restored).toBe(original);
@@ -114,8 +115,31 @@ describe('postprocessContent', () => {
 
   it('handles null frontmatter', () => {
     const result = postprocessContent('# Body', null, []);
-    expect(result).toBe('# Body');
+    expect(result).toBe('# Body\n');
     expect(result).not.toContain('---');
+  });
+
+  it('unescapes brackets outside code blocks', () => {
+    const result = postprocessContent('This has a footnote\\[^1\\].', null, []);
+    expect(result).toContain('[^1]');
+    expect(result).not.toContain('\\[');
+  });
+
+  it('unescapes HTML entities outside code blocks', () => {
+    const result = postprocessContent('Less than: &lt; Greater than: &gt;', null, []);
+    expect(result).toContain('Less than: <');
+    expect(result).toContain('Greater than: >');
+  });
+
+  it('does NOT unescape inside code blocks', () => {
+    const result = postprocessContent('```\n\\[escaped\\] &lt;tag&gt;\n```', null, []);
+    expect(result).toContain('\\[escaped\\]');
+    expect(result).toContain('&lt;tag&gt;');
+  });
+
+  it('ensures trailing newline', () => {
+    const result = postprocessContent('no trailing newline', null, []);
+    expect(result.endsWith('\n')).toBe(true);
   });
 });
 

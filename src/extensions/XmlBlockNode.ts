@@ -21,6 +21,19 @@ export const XmlBlockNode = Node.create({
     return {
       tagName: { default: '' },
       content: { default: '' },
+      index: { default: '' },
+    };
+  },
+
+  addStorage() {
+    return {
+      markdown: {
+        serialize(state: { write: (s: string) => void; closeBlock: (n: unknown) => void }, node: { attrs: { index: string } }) {
+          state.write(`%%XMLBLOCK:${node.attrs.index}%%`);
+          state.closeBlock(node);
+        },
+        parse: {},
+      },
     };
   },
 
@@ -28,6 +41,20 @@ export const XmlBlockNode = Node.create({
     return [
       {
         tag: 'div[data-type="xmlBlock"]',
+        getAttrs: (dom: HTMLElement) => {
+          const raw = dom.getAttribute('data-content') || '';
+          const content = raw
+            .replace(/&#10;/g, '\n')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&amp;/g, '&');
+          return {
+            tagName: dom.getAttribute('data-tag-name') || '',
+            content,
+            index: dom.getAttribute('data-index') || '',
+          };
+        },
       },
     ];
   },

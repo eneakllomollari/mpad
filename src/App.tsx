@@ -2,6 +2,8 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { getCurrentWebview } from '@tauri-apps/api/webview';
 
 import { Editor } from './components/Editor';
 import { GitStatusBar } from './components/GitStatusBar';
@@ -36,7 +38,7 @@ function App() {
   const [diff, setDiff] = useState('');
   const [showFind, setShowFind] = useState(false);
 
-  const [zoom, setZoom] = useState(100);
+  const [, setZoom] = useState(100);
 
   // Cached markdown file list for command palette
   const [mdFiles, setMdFiles] = useState<string[]>([]);
@@ -65,6 +67,8 @@ function App() {
       if (textResult.status === 'fulfilled') {
         setContent(textResult.value);
         setFilePath(path);
+        const fileName = path.split('/').pop() || 'mpad';
+        getCurrentWindow().setTitle(fileName).catch(() => {});
       } else {
         console.error('Failed to read file:', textResult.reason);
         return;
@@ -199,10 +203,31 @@ function App() {
   }, [showDiff, filePath, repoPath, fetchDiff]);
 
 
-  // Zoom handlers
-  const handleZoomIn = useCallback(() => setZoom((z) => Math.min(z + 10, 200)), []);
-  const handleZoomOut = useCallback(() => setZoom((z) => Math.max(z - 10, 60)), []);
-  const handleZoomReset = useCallback(() => setZoom(100), []);
+  // Zoom handlers — apply via both CSS and Tauri webview API for cross-platform reliability
+  const applyZoom = useCallback((level: number) => {
+    const factor = level / 100;
+    document.documentElement.style.fontSize = `${level}%`;
+    getCurrentWebview().setZoom(factor).catch(() => {});
+  }, []);
+
+  const handleZoomIn = useCallback(() => {
+    setZoom((z) => {
+      const next = Math.min(z + 10, 200);
+      applyZoom(next);
+      return next;
+    });
+  }, [applyZoom]);
+  const handleZoomOut = useCallback(() => {
+    setZoom((z) => {
+      const next = Math.max(z - 10, 60);
+      applyZoom(next);
+      return next;
+    });
+  }, [applyZoom]);
+  const handleZoomReset = useCallback(() => {
+    setZoom(100);
+    applyZoom(100);
+  }, [applyZoom]);
 
   // Palette commands
   const paletteCommands: PaletteCommand[] = useMemo(
@@ -257,7 +282,7 @@ function App() {
 
       <div className="app-main">
         <div className="editor-area" style={{ display: 'flex' }}>
-          <div style={{ flex: 1, overflow: 'auto', fontSize: `${zoom}%` }}>
+          <div style={{ flex: 1, overflow: 'auto' }}>
             {filePath ? (
               <Editor
                 content={content}
