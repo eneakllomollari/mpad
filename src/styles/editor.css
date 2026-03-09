@@ -676,6 +676,17 @@ body {
 .git-status-untracked { color: var(--git-untracked); }
 .git-status-deleted { color: var(--git-deleted); }
 
+.saved-indicator {
+  color: var(--git-added);
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.saved-indicator.visible {
+  opacity: 1;
+}
+
 /* ── Sidebar ───────────────────────────────────────── */
 
 .sidebar {

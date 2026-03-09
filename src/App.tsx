@@ -37,6 +37,7 @@ function App() {
   const [showPalette, setShowPalette] = useState(false);
   const [diff, setDiff] = useState('');
   const [showFind, setShowFind] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
 
   const [, setZoom] = useState(100);
 
@@ -172,7 +173,11 @@ function App() {
   // Force save (Cmd+S) — write immediately, no debounce
   const handleSave = useCallback(() => {
     if (filePath) {
-      saveImmediate(filePath, contentRef.current).then(refreshDiff);
+      saveImmediate(filePath, contentRef.current).then(() => {
+        refreshDiff();
+        setSavedFlash(true);
+        setTimeout(() => setSavedFlash(false), 2000);
+      });
     }
   }, [filePath, saveImmediate, refreshDiff]);
 
@@ -265,6 +270,15 @@ function App() {
 
   useKeyboardShortcuts(shortcutHandlers);
 
+  // Auto-collapse sidebar when window is narrow
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 600) setShowSidebar(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className="app-layout">
       {showSidebar && (
@@ -325,6 +339,7 @@ function App() {
         <GitStatusBar
           filePath={filePath}
           repoPath={repoPath}
+          savedFlash={savedFlash}
         />
       </div>
 

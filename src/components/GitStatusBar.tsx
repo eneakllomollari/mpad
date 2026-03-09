@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 interface GitStatusBarProps {
   filePath: string | null;
   repoPath: string | null;
+  savedFlash?: boolean;
 }
 
 interface GitStatus {
@@ -11,7 +12,7 @@ interface GitStatus {
   status: 'clean' | 'modified' | 'untracked' | 'deleted' | 'unknown';
 }
 
-export function GitStatusBar({ filePath, repoPath }: GitStatusBarProps) {
+export function GitStatusBar({ filePath, repoPath, savedFlash }: GitStatusBarProps) {
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
 
   const canFetch = !!filePath && !!repoPath;
@@ -50,6 +51,9 @@ export function GitStatusBar({ filePath, repoPath }: GitStatusBarProps) {
         ) : (
           <span>No file open</span>
         )}
+      </div>
+      <div className="status-bar-right">
+        <span className={`saved-indicator ${savedFlash ? 'visible' : ''}`}>Saved</span>
       </div>
     </div>
   );
