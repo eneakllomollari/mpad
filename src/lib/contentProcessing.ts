@@ -61,7 +61,7 @@ function unescapeMarkdown(md: string): string {
   let inFence = false;
 
   for (const line of lines) {
-    if (/^```/.test(line)) {
+    if (line.startsWith('```')) {
       inFence = !inFence;
       out.push(line);
       continue;

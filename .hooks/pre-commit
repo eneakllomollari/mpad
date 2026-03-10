@@ -13,6 +13,9 @@ bun run oxlint
 echo "==> Knip (dead code)..."
 bunx knip
 
+echo "==> Vitest..."
+bun run test
+
 echo "==> Rust check..."
 cd src-tauri
 PATH="$HOME/.cargo/bin:$PATH" cargo check --quiet 2>&1

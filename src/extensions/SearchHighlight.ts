@@ -1,6 +1,7 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
+import type { Node as PMNode } from '@tiptap/pm/model';
 
 export interface SearchHighlightStorage {
   query: string;
@@ -10,7 +11,7 @@ export interface SearchHighlightStorage {
 
 const searchPluginKey = new PluginKey('searchHighlight');
 
-function findMatches(doc: ReturnType<typeof import('@tiptap/pm/state').EditorState.prototype.doc.nodeAt>, query: string): { from: number; to: number }[] {
+function findMatches(doc: PMNode, query: string): { from: number; to: number }[] {
   if (!query) return [];
   const results: { from: number; to: number }[] = [];
   const lowerQuery = query.toLowerCase();
