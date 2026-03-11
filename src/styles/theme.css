@@ -85,10 +85,20 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 10px;
+  --radius-xl: 14px;
 
   /* Transitions */
   --transition-fast: 120ms ease;
   --transition-normal: 200ms ease;
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Panel shadows (replace hard borders) */
+  --shadow-panel: 0 0 0 1px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-float: 0 4px 16px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow-elevated: 0 24px 56px rgba(0, 0, 0, 0.16), 0 8px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --shadow-separator: 1px 0 3px rgba(0, 0, 0, 0.04);
+  --shadow-inset-top: inset 0 1px 0 rgba(0, 0, 0, 0.04);
 }
 
 /* ── Dark Theme ────────────────────────────────────── */
@@ -151,4 +161,10 @@
 
   --notification-bg: #2e2a1e;
   --notification-border: #5c5030;
+
+  --shadow-panel: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-float: 0 4px 16px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.15);
+  --shadow-elevated: 0 24px 56px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-separator: 1px 0 3px rgba(0, 0, 0, 0.15);
+  --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
