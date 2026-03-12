@@ -5,6 +5,7 @@ const config: KnipConfig = {
   ignoreDependencies: [
     '@tauri-apps/cli',
   ],
+  ignoreBinaries: ['scripts/install.sh'],
 };
 
 export default config;

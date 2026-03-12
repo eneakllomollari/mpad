@@ -11,11 +11,11 @@ case "$ARCH" in
 esac
 
 echo "Downloading mpad ($ARCH)..."
-curl -fSL "https://github.com/$REPO/releases/download/latest/$ARTIFACT" -o /tmp/mpad.zip
+gh release download latest -R "$REPO" -p "$ARTIFACT" -D /tmp --clobber
 
 echo "Installing to /Applications..."
-unzip -o /tmp/mpad.zip -d /Applications
+unzip -o "/tmp/$ARTIFACT" -d /Applications
 xattr -cr /Applications/mpad.app
-rm /tmp/mpad.zip
+rm "/tmp/$ARTIFACT"
 
 echo "Done. Run: open /Applications/mpad.app"
