@@ -30,6 +30,7 @@ function App() {
   const [filePath, setFilePath] = useState<string | null>(null);
   const [content, setContent] = useState('');
   const [repoPath, setRepoPath] = useState<string | null>(null);
+  const [folderPath, setFolderPath] = useState<string | null>(null);
   const [showSource, setShowSource] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
@@ -76,6 +77,8 @@ function App() {
 
       const rp = repoResult.status === 'fulfilled' ? repoResult.value : null;
       setRepoPath(rp);
+      // Set folder root: prefer git repo root, fall back to file's parent dir
+      setFolderPath((prev) => prev ?? (rp || path.replace(/\/[^/]+$/, '')));
 
       // Refresh diff if panel is open (use ref for fresh showDiff value)
       if (showDiffRef.current && rp) {
@@ -87,15 +90,15 @@ function App() {
     [readFile],
   );
 
-  // Fetch markdown files when repo changes (cached for palette)
+  // Fetch markdown files when folder changes (cached for palette)
   useEffect(() => {
-    if (!repoPath) return;
+    if (!folderPath) return;
     let stale = false;
-    invoke<string[]>('list_markdown_files', { root: repoPath })
+    invoke<string[]>('list_markdown_files', { root: folderPath })
       .then((files) => { if (!stale) setMdFiles(files); })
       .catch(() => { if (!stale) setMdFiles([]); });
     return () => { stale = true; };
-  }, [repoPath]);
+  }, [folderPath]);
 
   // Listen for open-file events from Rust backend (used for multi-window / second instance)
   const loadFileRef = useRef(loadFile);
@@ -194,6 +197,23 @@ function App() {
     }
   }, [loadFile]);
 
+  // Open folder dialog (Cmd+Shift+O)
+  const handleOpenFolder = useCallback(async () => {
+    try {
+      const selected = await open({ directory: true, multiple: false });
+      if (selected && typeof selected === 'string') {
+        setFolderPath(selected);
+        setShowSidebar(true);
+        // Detect git repo for status overlay
+        invoke<string | null>('git_find_repo', { path: selected })
+          .then(setRepoPath)
+          .catch(() => setRepoPath(null));
+      }
+    } catch {
+      // Dialog cancelled or unavailable
+    }
+  }, []);
+
   // Toggle diff
   const handleToggleDiff = useCallback(async () => {
     if (!showDiff && filePath && repoPath) {
@@ -234,6 +254,7 @@ function App() {
     () => [
       { id: 'save', label: 'Save', shortcut: `${modKey}S`, action: handleSave },
       { id: 'open', label: 'Open File', shortcut: `${modKey}O`, action: handleOpen },
+      { id: 'open-folder', label: 'Open Folder', shortcut: `${modKey}Shift+O`, action: handleOpenFolder },
       { id: 'find', label: 'Find', shortcut: `${modKey}F`, action: () => setShowFind((v) => !v) },
       { id: 'source', label: 'Toggle Source', shortcut: `${modKey}/`, action: () => setShowSource((v) => !v) },
       { id: 'diff', label: 'Toggle Diff', shortcut: `${modKey}D`, action: handleToggleDiff },
@@ -243,7 +264,7 @@ function App() {
       { id: 'zoomout', label: 'Zoom Out', shortcut: `${modKey}-`, action: handleZoomOut },
       { id: 'zoomreset', label: 'Zoom Reset', shortcut: `${modKey}0`, action: handleZoomReset },
     ],
-    [handleSave, handleOpen, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
+    [handleSave, handleOpen, handleOpenFolder, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
   );
 
   // Keyboard shortcuts
@@ -251,6 +272,7 @@ function App() {
     () => ({
       onSave: handleSave,
       onOpen: handleOpen,
+      onOpenFolder: handleOpenFolder,
       onToggleSource: () => setShowSource((v) => !v),
       onToggleDiff: handleToggleDiff,
       onToggleSidebar: () => setShowSidebar((v) => !v),
@@ -261,7 +283,7 @@ function App() {
       onZoomOut: handleZoomOut,
       onZoomReset: handleZoomReset,
     }),
-    [handleSave, handleOpen, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
+    [handleSave, handleOpen, handleOpenFolder, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
   );
 
   useKeyboardShortcuts(shortcutHandlers);
@@ -271,6 +293,7 @@ function App() {
       {showSidebar && (
         <Suspense>
           <Sidebar
+            folderPath={folderPath}
             repoPath={repoPath}
             currentFile={filePath}
             onFileSelect={loadFile}
@@ -334,7 +357,7 @@ function App() {
           <CommandPalette
             commands={paletteCommands}
             files={mdFiles}
-            repoPath={repoPath}
+            repoPath={folderPath}
             onFileSelect={loadFile}
             onClose={() => setShowPalette(false)}
           />

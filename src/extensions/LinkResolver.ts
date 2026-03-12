@@ -1,5 +1,6 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
+import type { EditorView } from '@tiptap/pm/view';
 import { invoke } from '@tauri-apps/api/core';
 
 export interface LinkResolverStorage {
@@ -45,12 +46,12 @@ export const LinkResolver = Extension.create({
                 if (!node) return false;
                 const nodeLinkMark = node.marks.find((m) => m.type.name === 'link');
                 if (!nodeLinkMark) return false;
-                handleLinkClick(nodeLinkMark.attrs.href, storage.filePath);
+                handleLinkClick(nodeLinkMark.attrs.href, storage.filePath, view);
                 event.preventDefault();
                 return true;
               }
 
-              handleLinkClick(linkMark.attrs.href, storage.filePath);
+              handleLinkClick(linkMark.attrs.href, storage.filePath, view);
               event.preventDefault();
               return true;
             },
@@ -64,8 +65,14 @@ export const LinkResolver = Extension.create({
 const EXTERNAL_URL_RE = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
 const MARKDOWN_EXT_RE = /\.(md|markdown|mdown)$/i;
 
-function handleLinkClick(href: string, currentFilePath: string | null): void {
+function handleLinkClick(href: string, currentFilePath: string | null, view: EditorView): void {
   if (!href) return;
+
+  // Anchor-only link (#heading-id) — scroll to heading
+  if (href.startsWith('#')) {
+    scrollToAnchor(href.slice(1), view);
+    return;
+  }
 
   // External URL (http, https, mailto, etc.)
   if (EXTERNAL_URL_RE.test(href)) {
@@ -86,6 +93,41 @@ function handleLinkClick(href: string, currentFilePath: string | null): void {
     invoke('open_with_system', { target: resolvedPath }).catch((err) =>
       console.error('Failed to open file:', err),
     );
+  }
+}
+
+/** Convert heading text to a GitHub-style anchor slug. */
+export function slugifyHeading(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s]+/g, '-');
+}
+
+function scrollToAnchor(anchor: string, view: EditorView): void {
+  const { doc } = view.state;
+  let targetPos: number | null = null;
+
+  doc.descendants((node, pos) => {
+    if (targetPos !== null) return false;
+    if (node.type.name === 'heading') {
+      const slug = slugifyHeading(node.textContent);
+      if (slug === anchor) {
+        targetPos = pos;
+        return false;
+      }
+    }
+    return true;
+  });
+
+  if (targetPos !== null) {
+    // Place cursor at start of heading and scroll into view
+    const tr = view.state.tr.setSelection(
+      view.state.selection.constructor.near(doc.resolve(targetPos + 1)),
+    );
+    view.dispatch(tr.scrollIntoView());
+    view.focus();
   }
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 
 interface SidebarProps {
+  folderPath: string | null;
   repoPath: string | null;
   currentFile: string | null;
   onFileSelect: (path: string) => void;
@@ -168,6 +169,7 @@ function TreeItem({
 }
 
 export function Sidebar({
+  folderPath,
   repoPath,
   currentFile,
   onFileSelect,
@@ -177,33 +179,36 @@ export function Sidebar({
   const [mdFiles, setMdFiles] = useState<string[]>([]);
   const [gitStatusMap, setGitStatusMap] = useState(() => new Map<string, string>());
 
+  // Fetch markdown files from folder root
   useEffect(() => {
-    if (!repoPath) return;
-
+    if (!folderPath) return;
     let stale = false;
+    invoke<string[]>('list_markdown_files', { root: folderPath })
+      .then((files) => { if (!stale) setMdFiles(files); })
+      .catch(() => { if (!stale) setMdFiles([]); });
+    return () => { stale = true; };
+  }, [folderPath]);
 
-    // Fetch markdown files and git status in parallel
-    const mdPromise = invoke<string[]>('list_markdown_files', { root: repoPath });
-    const gitPromise = invoke<GitEntry[]>('git_repo_tree', { repoPath }).catch(() => [] as GitEntry[]);
-
-    Promise.all([mdPromise, gitPromise]).then(([files, gitEntries]) => {
-      if (stale) return;
-      setMdFiles(files);
-
-      const statusMap = new Map<string, string>();
-      for (const entry of gitEntries) {
-        if (entry.status !== 'clean') {
-          statusMap.set(entry.path, entry.status);
+  // Fetch git status overlay (separate from file listing)
+  useEffect(() => {
+    let stale = false;
+    if (!repoPath) {
+      // Clear via microtask to avoid synchronous setState in effect
+      Promise.resolve().then(() => { if (!stale) setGitStatusMap(new Map()); });
+      return () => { stale = true; };
+    }
+    invoke<GitEntry[]>('git_repo_tree', { repoPath })
+      .then((gitEntries) => {
+        if (stale) return;
+        const statusMap = new Map<string, string>();
+        for (const entry of gitEntries) {
+          if (entry.status !== 'clean') {
+            statusMap.set(entry.path, entry.status);
+          }
         }
-      }
-      setGitStatusMap(statusMap);
-    }).catch(() => {
-      if (!stale) {
-        setMdFiles([]);
-        setGitStatusMap(new Map());
-      }
-    });
-
+        setGitStatusMap(statusMap);
+      })
+      .catch(() => { if (!stale) setGitStatusMap(new Map()); });
     return () => { stale = true; };
   }, [repoPath]);
 
@@ -213,11 +218,11 @@ export function Sidebar({
 
   return (
     <div className="sidebar" style={style}>
-      <div className="sidebar-header">{repoPath ? repoPath.split('/').filter(Boolean).pop() : 'Files'}</div>
+      <div className="sidebar-header">{folderPath ? folderPath.split('/').filter(Boolean).pop() : 'Files'}</div>
       <div className="file-tree">
-        {tree.length === 0 && !repoPath && (
+        {tree.length === 0 && !folderPath && (
           <div style={{ padding: '0.75em', color: 'var(--text-muted)' }}>
-            No repo loaded
+            Open a folder with {'\u2318'}Shift+O
           </div>
         )}
         {tree
@@ -227,7 +232,7 @@ export function Sidebar({
               node={node}
               depth={0}
               currentFile={currentFile}
-              rootPath={repoPath ?? ''}
+              rootPath={folderPath ?? ''}
               onFileSelect={onFileSelect}
             />
           ))}

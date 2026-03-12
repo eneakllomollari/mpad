@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 interface ShortcutHandlers {
   onSave?: () => void;
   onOpen?: () => void;
+  onOpenFolder?: () => void;
   onToggleSource?: () => void;
   onToggleDiff?: () => void;
   onToggleSidebar?: () => void;
@@ -35,7 +36,11 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
           break;
         case 'o':
           e.preventDefault();
-          h.onOpen?.();
+          if (e.shiftKey) {
+            h.onOpenFolder?.();
+          } else {
+            h.onOpen?.();
+          }
           break;
         case '/':
           e.preventDefault();
