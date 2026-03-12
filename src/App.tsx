@@ -234,9 +234,10 @@ function App() {
     () => [
       { id: 'save', label: 'Save', shortcut: `${modKey}S`, action: handleSave },
       { id: 'open', label: 'Open File', shortcut: `${modKey}O`, action: handleOpen },
+      { id: 'find', label: 'Find', shortcut: `${modKey}F`, action: () => setShowFind((v) => !v) },
       { id: 'source', label: 'Toggle Source', shortcut: `${modKey}/`, action: () => setShowSource((v) => !v) },
       { id: 'diff', label: 'Toggle Diff', shortcut: `${modKey}D`, action: handleToggleDiff },
-      { id: 'sidebar', label: 'Toggle Sidebar', shortcut: `${modKey}B`, action: () => setShowSidebar((v) => !v) },
+      { id: 'sidebar', label: 'Toggle Sidebar', shortcut: `${modKey}\\`, action: () => setShowSidebar((v) => !v) },
       { id: 'gitlog', label: 'Toggle Git Log', shortcut: `${modKey}L`, action: () => setShowGitLog((v) => !v) },
       { id: 'zoomin', label: 'Zoom In', shortcut: `${modKey}+`, action: handleZoomIn },
       { id: 'zoomout', label: 'Zoom Out', shortcut: `${modKey}-`, action: handleZoomOut },

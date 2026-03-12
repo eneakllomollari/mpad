@@ -86,3 +86,30 @@ describe('DiffView edge cases', () => {
     expect(DiffView).toBeDefined();
   });
 });
+
+describe('keyboard shortcut definitions', () => {
+  it('sidebar shortcut must NOT be Cmd+B (conflicts with TipTap bold)', () => {
+    const src = readFileSync(join(__dirname, '../src/hooks/useKeyboardShortcuts.ts'), 'utf-8');
+    const sidebarCase = src.match(/onToggleSidebar/);
+    expect(sidebarCase).toBeTruthy();
+
+    const lines = src.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes('onToggleSidebar')) {
+        const contextStart = Math.max(0, i - 3);
+        const context = lines.slice(contextStart, i + 1).join('\n');
+        expect(context).not.toMatch(/case\s+['"]b['"]/);
+      }
+    }
+  });
+
+  it('sidebar shortcut should use Cmd+backslash', () => {
+    const src = readFileSync(join(__dirname, '../src/hooks/useKeyboardShortcuts.ts'), 'utf-8');
+    expect(src).toContain("case '\\\\':");
+  });
+
+  it('global handler should suppress shortcuts when palette is open', () => {
+    const src = readFileSync(join(__dirname, '../src/hooks/useKeyboardShortcuts.ts'), 'utf-8');
+    expect(src).toContain('.palette');
+  });
+});
