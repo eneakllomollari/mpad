@@ -81,16 +81,15 @@ const slashItems: SlashItem[] = [
 function SlashMenu({ editor, onClose }: { editor: ReturnType<typeof useEditor>; onClose: () => void }) {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(0);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(
     () => slashItems.filter((item) => item.label.toLowerCase().includes(query.toLowerCase())),
     [query],
   );
 
-  // Clamp selection to valid range when filtered results change
   const clampedSelected = Math.min(selected, Math.max(filtered.length - 1, 0));
 
-  // Use refs for values that change frequently to avoid re-registering the listener
   const queryRef = useRef(query);
   useEffect(() => { queryRef.current = query; });
   const filteredRef = useRef(filtered);
@@ -124,18 +123,40 @@ function SlashMenu({ editor, onClose }: { editor: ReturnType<typeof useEditor>; 
     return () => window.removeEventListener('keydown', handler, true);
   }, [editor, onClose]);
 
-  // Position near cursor — computed once on mount
+  // Dismiss on click-outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    window.addEventListener('mousedown', handler);
+    return () => window.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  // Position near cursor, clamped to viewport
   const pos = useMemo(() => {
     if (!editor) return null;
     const { from } = editor.state.selection;
     const coords = editor.view.coordsAtPos(from);
-    return { top: coords.bottom + 4, left: coords.left };
+    const menuHeight = 320;
+    const menuWidth = 220;
+    let top = coords.bottom + 4;
+    let left = coords.left;
+    if (top + menuHeight > window.innerHeight) {
+      top = coords.top - menuHeight - 4;
+    }
+    if (left + menuWidth > window.innerWidth) {
+      left = window.innerWidth - menuWidth - 8;
+    }
+    return { top: Math.max(4, top), left: Math.max(4, left) };
   }, [editor]);
 
   if (!pos || filtered.length === 0) return null;
 
   return (
     <div
+      ref={menuRef}
       className="slash-menu"
       style={{ top: pos.top, left: pos.left }}
     >
@@ -213,6 +234,10 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
 
   const lastKnownContent = useRef(content);
 
+  // Ref to always access the latest onUpdate without stale closures in editor callback
+  const onUpdateRef = useRef(onUpdate);
+  useEffect(() => { onUpdateRef.current = onUpdate; });
+
   const handleUpdate = useCallback(
     (md: string) => {
       const full = postprocessContent(
@@ -221,9 +246,9 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
         processedRef.current.xmlBlocks,
       );
       lastKnownContent.current = full;
-      onUpdate(full);
+      onUpdateRef.current(full);
     },
-    [onUpdate],
+    [],
   );
 
   const editor = useEditor({
