@@ -59,7 +59,7 @@ CLI wrapper uses `open -a "$TARGET" --args "$FILE_ARG"` — must use `--args`, n
 
 ## Shortcuts
 
-`Cmd+K` command palette (files + commands), `Cmd+S` save, `Cmd+O` open, `Cmd+/` source toggle, `Cmd+D` diff, `Cmd+B` sidebar, `Cmd+L` git log, `Cmd+Shift+Up/Down` heading cycle, `/` on empty line for slash commands
+`Cmd+K` command palette (files + commands), `Cmd+S` save, `Cmd+O` open, `Cmd+F` find, `Cmd+/` source toggle, `Cmd+D` diff, `Cmd+\` sidebar, `Cmd+L` git log, `Cmd+Shift+Up/Down` heading cycle, `/` on empty line for slash commands. `Cmd+B` is reserved for bold (TipTap built-in) — do NOT reassign it.
 
 ## Gotchas
 

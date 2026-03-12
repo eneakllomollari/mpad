@@ -24,7 +24,8 @@ export function FindBar({ editor, visible, onClose }: FindBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
 
-  // Focus input when bar opens
+  // Focus input when bar opens; clear search highlights on cleanup (covers
+  // both Escape/close-button and Cmd+F toggle which bypasses handleClose)
   useEffect(() => {
     if (visible) {
       requestAnimationFrame(() => {
@@ -32,7 +33,8 @@ export function FindBar({ editor, visible, onClose }: FindBarProps) {
         inputRef.current?.select();
       });
     }
-  }, [visible]);
+    return () => { clearSearch(editor); };
+  }, [visible, editor]);
 
   const handleClose = useCallback(() => {
     setQuery('');

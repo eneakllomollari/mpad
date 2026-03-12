@@ -24,7 +24,11 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       if (!mod) return;
       const h = ref.current;
 
-      switch (e.key.toLowerCase()) {
+      // When the command palette is open, only allow its toggle shortcut through
+      const key = e.key.toLowerCase();
+      if ((e.target as HTMLElement)?.closest?.('.palette') && key !== 'k') return;
+
+      switch (key) {
         case 's':
           e.preventDefault();
           h.onSave?.();
@@ -41,7 +45,7 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
           e.preventDefault();
           h.onToggleDiff?.();
           break;
-        case 'b':
+        case '\\':
           e.preventDefault();
           h.onToggleSidebar?.();
           break;

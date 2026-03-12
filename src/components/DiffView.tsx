@@ -7,7 +7,23 @@ interface DiffViewProps {
 }
 
 export function DiffView({ diff, visible, style }: DiffViewProps) {
-  if (!visible || !diff) return null;
+  if (!visible) return null;
+
+  if (!diff) {
+    return (
+      <div className="diff-panel" style={style}>
+        <div style={{
+          padding: '2em 1.5em',
+          color: 'var(--text-muted)',
+          fontFamily: 'var(--font-ui)',
+          fontSize: '0.85em',
+          textAlign: 'center',
+        }}>
+          No changes from HEAD
+        </div>
+      </div>
+    );
+  }
 
   const lines = diff.split('\n');
 
