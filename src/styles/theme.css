@@ -72,13 +72,18 @@
   --xml-default-bg: #f0ede8;
   --xml-default-border: #d0cbc4;
 
+  /* Mermaid */
+  --mermaid-bg: #faf7f4;
+  --mermaid-border: #e5ddd5;
+  --mermaid-border-hover: #c4a48c;
+
   /* Notification */
   --notification-bg: #fef8e8;
   --notification-border: #e8d5a0;
 
   /* Typography */
-  --font-body: 'Source Serif 4', 'Georgia', serif;
-  --font-ui: 'DM Sans', -apple-system, sans-serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+  --font-ui: 'Inter', -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', Menlo, monospace;
 
   /* Spacing & radius */
@@ -158,6 +163,10 @@
   --xml-green-border: #487858;
   --xml-default-bg: #2a2825;
   --xml-default-border: #484440;
+
+  --mermaid-bg: #242220;
+  --mermaid-border: #3a3530;
+  --mermaid-border-hover: #5c4a3e;
 
   --notification-bg: #2e2a1e;
   --notification-border: #5c5030;

@@ -1,16 +1,24 @@
 const XML_BLOCK_RE =
   /^<([a-zA-Z][a-zA-Z0-9_-]*)>\s*\n([\s\S]*?)\n<\/\1>\s*$/gm;
 
+const MERMAID_BLOCK_RE = /^```mermaid\n([\s\S]*?)```$/gm;
+
 export interface XmlBlock {
   placeholder: string;
   tagName: string;
   content: string;
 }
 
+export interface MermaidBlock {
+  placeholder: string;
+  code: string;
+}
+
 export interface Processed {
   frontmatter: string | null;
   body: string;
   xmlBlocks: XmlBlock[];
+  mermaidBlocks: MermaidBlock[];
 }
 
 const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---(?:\n|$)/;
@@ -42,7 +50,24 @@ export function preprocessContent(raw: string): Processed {
     return `<div data-type="xmlBlock" data-tag-name="${tagName}" data-content="${safeContent}" data-index="${i}"></div>`;
   });
 
-  return { frontmatter, body, xmlBlocks };
+  const mermaidBlocks: MermaidBlock[] = [];
+  let mIdx = 0;
+
+  body = body.replace(MERMAID_BLOCK_RE, (_match, code: string) => {
+    const placeholder = `%%MERMAID:${mIdx}%%`;
+    mermaidBlocks.push({ placeholder, code: code.trimEnd() });
+    const i = mIdx++;
+    const safeCode = code
+      .trimEnd()
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, '&#10;');
+    return `<div data-type="mermaidBlock" data-code="${safeCode}" data-index="${i}"></div>`;
+  });
+
+  return { frontmatter, body, xmlBlocks, mermaidBlocks };
 }
 
 /**
@@ -85,6 +110,7 @@ export function postprocessContent(
   md: string,
   frontmatter: string | null,
   xmlBlocks: XmlBlock[],
+  mermaidBlocks: MermaidBlock[] = [],
 ): string {
   let result = unescapeMarkdown(md);
 
@@ -98,6 +124,16 @@ export function postprocessContent(
       `<div data-type="xmlBlock" data-tag-name="${block.tagName}"[^>]*data-index="${i}"[^>]*></div>`,
     );
     result = result.replace(divRe, xmlOutput);
+  }
+
+  for (let i = 0; i < mermaidBlocks.length; i++) {
+    const block = mermaidBlocks[i];
+    const mermaidOutput = `\`\`\`mermaid\n${block.code}\n\`\`\``;
+    result = result.replace(block.placeholder, mermaidOutput);
+    const divRe = new RegExp(
+      `<div data-type="mermaidBlock"[^>]*data-index="${i}"[^>]*></div>`,
+    );
+    result = result.replace(divRe, mermaidOutput);
   }
 
   if (frontmatter) {

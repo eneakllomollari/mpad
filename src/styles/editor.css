@@ -51,13 +51,13 @@ body {
   outline: none;
   padding: 3rem 3.5rem 4rem;
   min-height: calc(100vh - var(--statusbar-height));
-  max-width: 44rem;
+  max-width: 60rem;
   margin: 0 auto;
   font-family: var(--font-body);
   font-size: 16.5px;
   line-height: 1.72;
   color: var(--text-primary);
-  font-feature-settings: 'onum' 1, 'liga' 1, 'kern' 1;
+  font-feature-settings: 'liga' 1, 'kern' 1;
 }
 
 .tiptap > *:first-child {
@@ -423,13 +423,102 @@ body {
   line-height: 1.55;
 }
 
+/* ── Mermaid Block ─────────────────────────────────── */
+
+.mermaid-block {
+  background: var(--mermaid-bg);
+  border: 1px solid var(--mermaid-border);
+  border-radius: var(--radius-lg);
+  margin: 1.2em 0;
+  overflow: hidden;
+  transition: border-color 200ms var(--ease-spring), box-shadow 200ms var(--ease-spring);
+}
+
+.mermaid-block:hover {
+  border-color: var(--mermaid-border-hover);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.mermaid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4em 0.85em;
+  border-bottom: 1px solid var(--mermaid-border);
+}
+
+.mermaid-label {
+  font-weight: 500;
+  font-size: 0.7em;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mermaid-toggle {
+  font-size: 0.7em;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.15em 0.5em;
+  border-radius: var(--radius-sm);
+  transition: background 150ms var(--ease-spring), color 150ms var(--ease-spring);
+}
+
+.mermaid-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.mermaid-diagram {
+  display: flex;
+  justify-content: center;
+  padding: 1.5em 1em;
+  overflow-x: auto;
+}
+
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-error {
+  color: var(--git-deleted);
+  font-family: var(--font-ui);
+  font-size: 0.82em;
+  padding: 1.5em 1em;
+  text-align: center;
+}
+
+.mermaid-source {
+  background: var(--bg-tertiary);
+  margin: 0;
+  padding: 1em 1.2em;
+  overflow-x: auto;
+  font-size: 0.78em;
+  line-height: 1.65;
+  border-radius: 0;
+}
+
+.mermaid-source code {
+  background: none;
+  color: var(--text-secondary);
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  font-weight: 400;
+  font-family: var(--font-mono);
+}
+
 /* ── Source View (raw textarea) ────────────────────── */
 
 .source-editor {
   width: 100%;
   min-height: calc(100vh - var(--statusbar-height));
   padding: 3rem 3.5rem;
-  max-width: 44rem;
+  max-width: 60rem;
   margin: 0 auto;
   display: block;
   background: var(--bg-primary);

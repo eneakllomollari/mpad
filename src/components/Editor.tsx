@@ -11,6 +11,7 @@ import { common, createLowlight } from 'lowlight';
 import { gfmExtensions } from '../extensions/gfm';
 import { FrontmatterNode } from '../extensions/FrontmatterNode';
 import { XmlBlockNode } from '../extensions/XmlBlockNode';
+import { MermaidNode } from '../extensions/MermaidNode';
 import { LinkResolver } from '../extensions/LinkResolver';
 import type { LinkResolverStorage } from '../extensions/LinkResolver';
 import { preprocessContent, postprocessContent } from '../lib/contentProcessing';
@@ -76,6 +77,18 @@ const slashItems: SlashItem[] = [
   { label: 'Code Block', description: 'Fenced code', action: (e) => e?.chain().focus().toggleCodeBlock().run() },
   { label: 'Blockquote', description: 'Quote block', action: (e) => e?.chain().focus().toggleBlockquote().run() },
   { label: 'Horizontal Rule', description: 'Divider', action: (e) => e?.chain().focus().setHorizontalRule().run() },
+  {
+    label: 'Mermaid Diagram',
+    description: 'Diagram block',
+    action: (e) => {
+      if (!e) return;
+      const code = 'graph TD\n    A[Start] --> B[End]';
+      e.chain().focus().insertContent({
+        type: 'mermaidBlock',
+        attrs: { code, index: `new-${Date.now()}` },
+      }).run();
+    },
+  },
 ];
 
 function SlashMenu({ editor, onClose }: { editor: ReturnType<typeof useEditor>; onClose: () => void }) {
@@ -194,6 +207,7 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
     frontmatter: null,
     body: '',
     xmlBlocks: [],
+    mermaidBlocks: [],
   });
 
   const [showSlashMenu, setShowSlashMenu] = useState(false);
@@ -225,6 +239,7 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
       ...gfmExtensions,
       FrontmatterNode,
       XmlBlockNode,
+      MermaidNode,
       LinkResolver,
       HeadingCycle,
       SearchHighlight,
@@ -244,6 +259,7 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
         md,
         processedRef.current.frontmatter,
         processedRef.current.xmlBlocks,
+        processedRef.current.mermaidBlocks,
       );
       lastKnownContent.current = full;
       onUpdateRef.current(full);
