@@ -15,7 +15,8 @@
     "knip": "knip",
     "test": "vitest run",
     "check:all": "bun run check && bun run test && bun run check:rust",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "reinstall": "bunx tauri build && cp -r src-tauri/target/release/bundle/macos/mpad.app /Applications/"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.10.1",

@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            runner: macos-latest
+            artifact: mpad-aarch64.zip
+          - target: x86_64-apple-darwin
+            runner: macos-latest
+            artifact: mpad-x86_64.zip
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build Tauri app
+        run: bunx tauri build --target ${{ matrix.target }}
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ""
+
+      - name: Zip app bundle
+        run: |
+          cd src-tauri/target/${{ matrix.target }}/release/bundle/macos
+          zip -r ${{ github.workspace }}/${{ matrix.artifact }} mpad.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create universal binary
+        run: |
+          ls -la *.zip
+
+      - name: Update latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Build
+          body: |
+            Rolling release from `main`. Updated on every push.
+
+            ## Install
+
+            ```sh
+            # Apple Silicon
+            curl -fSL https://github.com/eneakllomollari/mpad/releases/download/latest/mpad-aarch64.zip -o /tmp/mpad.zip
+
+            # Intel
+            curl -fSL https://github.com/eneakllomollari/mpad/releases/download/latest/mpad-x86_64.zip -o /tmp/mpad.zip
+
+            # Then install
+            unzip -o /tmp/mpad.zip -d /Applications && xattr -cr /Applications/mpad.app
+            ```
+          files: |
+            mpad-aarch64.zip
+            mpad-x86_64.zip
+          prerelease: false
+          make_latest: true
