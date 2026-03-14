@@ -19,5 +19,27 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            group: ['gray-matter'],
+            message: 'gray-matter breaks on lone "---". Use the strict regex in contentProcessing.ts.',
+          },
+        ],
+        paths: [
+          {
+            name: '@tauri-apps/plugin-fs',
+            importNames: ['readTextFile', 'readFile', 'writeTextFile', 'writeFile'],
+            message: 'Use invoke("read_file")/invoke("write_file") Rust commands instead. FS plugin scope breaks on absolute paths.',
+          },
+          {
+            name: '@tiptap/react',
+            importNames: ['BubbleMenu'],
+            message: 'Import BubbleMenu from "@tiptap/react/menus", not "@tiptap/react".',
+          },
+        ],
+      }],
+    },
   },
 ])

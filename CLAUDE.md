@@ -1,5 +1,8 @@
 # mpad
 
+> See [AGENTS.md](AGENTS.md) for the universal agent entrypoint.
+> Deep documentation in [docs/](docs/) — architecture, testing, conventions, gotchas.
+
 Tauri v2 desktop Markdown viewer/editor. WYSIWYG editing with TipTap, git-aware, optimized for agent skills files.
 
 ## Tech Stack
@@ -12,7 +15,7 @@ Tauri v2 desktop Markdown viewer/editor. WYSIWYG editing with TipTap, git-aware,
 
 ###### **Theme**: Warm editorial — terracotta `#c4603c`, Source Serif 4, DM Sans, JetBrains Mono
 
-## Architecture
+## Architecture → [docs/architecture.md](docs/architecture.md)
 
 - **File I/O**: Custom Rust `read_file`/`write_file` commands — do NOT use Tauri FS plugin (scope issues with absolute paths)
 - **CLI args**: `InitialFileState` managed state in Rust, fetched by frontend via `get_initial_file` command (avoids event race condition)
@@ -24,7 +27,7 @@ Tauri v2 desktop Markdown viewer/editor. WYSIWYG editing with TipTap, git-aware,
 - **Sidebar**: `list_markdown_files` Rust command walks filesystem recursively (includes dotdirs like `.claude/`), filtered to `.md`/`.markdown`/`.mdown` only. Skips `node_modules`, `target`, `.git`, `dist`, `build`, `__pycache__`, `.venv`, `.env`, `.pytest_cache`. Git status overlaid from `git_repo_tree`.
 - **Command palette**: Unified `Cmd+K` palette combining file search and commands. Logic in `src/lib/fuzzyMatch.ts` (exported for testing). Empty query shows all commands; typing filters both files and commands. Commands rank above files (+2000 score boost).
 
-## Build & Test
+## Build & Test → [docs/testing.md](docs/testing.md)
 
 ```bash
 bun run check          # TypeScript + ESLint
@@ -61,12 +64,12 @@ CLI wrapper uses `open -a "$TARGET" --args "$FILE_ARG"` — must use `--args`, n
 
 `Cmd+K` command palette (files + commands), `Cmd+S` save, `Cmd+O` open, `Cmd+F` find, `Cmd+/` source toggle, `Cmd+D` diff, `Cmd+\` sidebar, `Cmd+L` git log, `Cmd+Shift+Up/Down` heading cycle, `/` on empty line for slash commands. `Cmd+B` is reserved for bold (TipTap built-in) — do NOT reassign it.
 
-## Gotchas
+## Gotchas → [docs/gotchas.md](docs/gotchas.md)
 
 - React 19: refs cannot be read/written during render — use `useEffect` for updates, callbacks for reads
 - React 19: `set-state-in-effect` lint rule — avoid calling setState synchronously in effects; use callbacks or fetch in `.then()` chains instead
 - React 19: `react-refresh/only-export-components` — don't export non-component functions from component files; extract shared logic to `src/lib/`
 - git2 feature name is `vendored-libgit2` (not `vendored`)
-- Pre-commit hook at `.hooks/pre-commit` runs tsc, eslint, cargo check, cargo test
+- Pre-commit hook at `.hooks/pre-commit` runs tsc, eslint, cargo check, cargo test — auto-installed via `bun install`
 - Diff panel must refresh when switching files — handle in `loadFile`, not via a separate effect (avoids setState-in-effect lint)
 - Sidebar auto-expands `.claude/`, `.cursor/`, `.agents/` directories by default
