@@ -82,8 +82,8 @@
   --notification-border: #e8d5a0;
 
   /* Typography */
-  --font-body: 'Inter', -apple-system, sans-serif;
-  --font-ui: 'Inter', -apple-system, sans-serif;
+  --font-body: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-ui: 'DM Sans', -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', Menlo, monospace;
 
   /* Spacing & radius */

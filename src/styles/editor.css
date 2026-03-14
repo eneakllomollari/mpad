@@ -23,6 +23,7 @@ body {
   background: var(--bg-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
 }
 
 /* ── Scrollbar ─────────────────────────────────────── */
@@ -54,10 +55,11 @@ body {
   max-width: 60rem;
   margin: 0 auto;
   font-family: var(--font-body);
-  font-size: 16.5px;
-  line-height: 1.72;
+  font-size: 17px;
+  line-height: 1.78;
   color: var(--text-primary);
-  font-feature-settings: 'liga' 1, 'kern' 1;
+  font-feature-settings: 'liga' 1, 'kern' 1, 'onum' 0;
+  font-optical-sizing: auto;
 }
 
 .tiptap > *:first-child {
@@ -75,41 +77,47 @@ body {
   font-family: var(--font-body);
   color: var(--heading-color);
   font-weight: 600;
-  line-height: 1.28;
-  margin-top: 2em;
-  margin-bottom: 0.6em;
+  line-height: 1.25;
+  margin-top: 2.2em;
+  margin-bottom: 0.55em;
   letter-spacing: -0.01em;
+  font-optical-sizing: auto;
 }
 
 .tiptap h1 {
-  font-size: 2.1em;
+  font-size: 2.2em;
   font-weight: 700;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
   margin-top: 0;
 }
 
 .tiptap h2 {
-  font-size: 1.55em;
-  letter-spacing: -0.015em;
-  padding-bottom: 0.25em;
+  font-size: 1.5em;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  padding-bottom: 0.3em;
   border-bottom: 1px solid var(--border-light);
 }
 
 .tiptap h3 {
-  font-size: 1.25em;
+  font-size: 1.22em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .tiptap h4 {
-  font-size: 0.85em;
-  font-weight: 500;
+  font-size: 0.78em;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   color: var(--text-secondary);
   font-family: var(--font-ui);
 }
 
 .tiptap h5 {
   font-size: 1em;
+  font-weight: 500;
   color: var(--text-secondary);
 }
 
@@ -122,11 +130,11 @@ body {
 /* ── Paragraphs & Text ─────────────────────────────── */
 
 .tiptap p {
-  margin-bottom: 0.85em;
+  margin-bottom: 0.9em;
 }
 
 .tiptap strong {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--heading-color);
 }
 
@@ -137,8 +145,8 @@ body {
 .tiptap a {
   color: var(--link-color);
   text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color var(--transition-fast);
+  border-bottom: 1px solid color-mix(in srgb, var(--link-color) 35%, transparent);
+  transition: border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .tiptap a:hover {
@@ -159,10 +167,11 @@ body {
   background: var(--code-bg);
   color: var(--code-text);
   font-family: var(--font-mono);
-  font-size: 0.82em;
-  padding: 0.15em 0.4em;
+  font-size: 0.8em;
+  padding: 0.18em 0.45em;
   border-radius: var(--radius-sm);
   font-weight: 500;
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
 }
 
 /* ── Code Blocks ───────────────────────────────────── */
@@ -171,11 +180,12 @@ body {
   background: var(--code-block-bg);
   border: 1px solid var(--code-block-border);
   border-radius: var(--radius-lg);
-  padding: 1.1em 1.4em;
-  margin: 1.2em 0;
+  padding: 1.15em 1.5em;
+  margin: 1.3em 0;
   overflow-x: auto;
-  font-size: 0.82em;
-  line-height: 1.6;
+  font-size: 0.8em;
+  line-height: 1.65;
+  font-optical-sizing: none;
 }
 
 .tiptap pre code {
@@ -190,13 +200,14 @@ body {
 /* ── Blockquotes ───────────────────────────────────── */
 
 .tiptap blockquote {
-  border-left: 2px solid var(--blockquote-border);
+  border-left: 3px solid var(--blockquote-border);
   background: var(--blockquote-bg);
-  padding: 0.6em 1.2em;
-  margin: 1.2em 0;
+  padding: 0.65em 1.25em 0.65em 1.1em;
+  margin: 1.4em 0;
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
   color: var(--text-secondary);
   font-style: italic;
+  font-size: 0.97em;
 }
 
 .tiptap blockquote p:last-child {
@@ -207,20 +218,28 @@ body {
 
 .tiptap ul,
 .tiptap ol {
-  padding-left: 1.4em;
-  margin-bottom: 0.85em;
+  padding-left: 1.5em;
+  margin-bottom: 0.9em;
 }
 
 .tiptap li {
-  margin-bottom: 0.3em;
+  margin-bottom: 0.32em;
 }
 
 .tiptap li p {
-  margin-bottom: 0.25em;
+  margin-bottom: 0.28em;
 }
 
 .tiptap li::marker {
+  color: var(--accent);
+  font-size: 0.85em;
+}
+
+.tiptap ol li::marker {
   color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 0.82em;
+  font-weight: 500;
 }
 
 /* ── Task Lists ────────────────────────────────────── */
@@ -309,8 +328,8 @@ body {
 .tiptap table {
   border-collapse: collapse;
   width: 100%;
-  margin: 1.2em 0;
-  font-size: 0.9em;
+  margin: 1.4em 0;
+  font-size: 0.88em;
   font-family: var(--font-ui);
 }
 
@@ -324,9 +343,9 @@ body {
 .tiptap table th {
   background: var(--table-header-bg);
   font-weight: 600;
-  font-size: 0.85em;
+  font-size: 0.82em;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
   color: var(--text-secondary);
 }
 
@@ -745,11 +764,12 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 1.2em;
-  font-size: 0.72em;
+  font-size: 0.71em;
   font-family: var(--font-ui);
   color: var(--text-muted);
   flex-shrink: 0;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.015em;
+  font-weight: 400;
 }
 
 .status-bar-left,
@@ -760,7 +780,7 @@ body {
 }
 
 .git-branch {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-secondary);
 }
 
@@ -784,11 +804,11 @@ body {
 .sidebar-header {
   padding: 0.85em 1.1em;
   font-weight: 600;
-  font-size: 0.72em;
+  font-size: 0.7em;
   color: var(--text-muted);
   box-shadow: inset 0 -1px 0 var(--border-light);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
 }
 
 .file-tree {
@@ -859,10 +879,10 @@ body {
 .git-log-header {
   padding: 0.55em 1.2em;
   font-weight: 600;
-  font-size: 0.72em;
+  font-size: 0.7em;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   position: sticky;
   top: 0;
@@ -915,22 +935,29 @@ body {
   justify-content: center;
   height: 100%;
   color: var(--text-muted);
-  font-size: 1em;
+  font-size: 0.95em;
   font-family: var(--font-ui);
-  gap: 0.6em;
+  gap: 0.5em;
+  user-select: none;
+}
+
+.empty-state > span {
+  font-weight: 400;
+  letter-spacing: 0.005em;
 }
 
 .empty-state kbd {
   display: inline-block;
-  font-family: var(--font-ui);
-  font-size: 0.82em;
+  font-family: var(--font-mono);
+  font-size: 0.78em;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  padding: 0.15em 0.5em;
+  padding: 0.12em 0.55em;
   color: var(--text-secondary);
   font-weight: 500;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 0 var(--border-color);
+  box-shadow: 0 1px 0 var(--border-color);
+  vertical-align: baseline;
 }
 
 /* ── Bubble Menu ──────────────────────────────────── */
@@ -1038,9 +1065,10 @@ body {
 /* ── Highlight Mark ───────────────────────────────── */
 
 .tiptap mark {
-  background: var(--accent-subtle);
+  background: oklch(from var(--accent) 94% 0.04 h / 0.55);
   border-radius: 2px;
-  padding: 0 2px;
+  padding: 0.05em 2px;
+  color: inherit;
 }
 
 /* ── Syntax Highlighting (lowlight) ───────────────── */
@@ -1132,14 +1160,21 @@ body {
 .palette-input {
   width: 100%;
   padding: 14px 18px;
-  font-size: 15px;
+  font-size: 14.5px;
   font-family: var(--font-ui);
+  font-weight: 400;
   background: var(--bg-primary);
   color: var(--text-primary);
   border: none;
   box-shadow: inset 0 -1px 0 var(--border-light);
   outline: none;
   box-sizing: border-box;
+  letter-spacing: 0.005em;
+}
+
+.palette-input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
 }
 
 .palette-list {
