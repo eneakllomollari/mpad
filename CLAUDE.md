@@ -1,9 +1,8 @@
 # mpad
 
-> See [AGENTS.md](AGENTS.md) for the universal agent entrypoint.
-> Deep documentation in [docs/](docs/) — architecture, testing, conventions, gotchas.
-
 Tauri v2 desktop Markdown viewer/editor. WYSIWYG editing with TipTap, git-aware, optimized for agent skills files.
+
+> `AGENTS.md` is a symlink to this file. One source of truth for all agent systems.
 
 ## Tech Stack
 
@@ -15,7 +14,21 @@ Tauri v2 desktop Markdown viewer/editor. WYSIWYG editing with TipTap, git-aware,
 
 ###### **Theme**: Warm editorial — terracotta `#c4603c`, Source Serif 4, DM Sans, JetBrains Mono
 
-## Architecture → [docs/architecture.md](docs/architecture.md)
+## Build & Test
+
+```bash
+bun run check          # TypeScript + ESLint
+bun run test           # Vitest with coverage (must meet thresholds)
+bun run check:rust     # cargo check + cargo test (18 git tests)
+bun run check:all      # All of the above
+bunx tauri build       # Full release build
+```
+
+All checks run in CI on every PR (`.github/workflows/ci.yml`). Do NOT merge if any fail.
+
+CLI wrapper uses `open -a "$TARGET" --args "$FILE_ARG"` — must use `--args`, not positional.
+
+## Architecture
 
 - **File I/O**: Custom Rust `read_file`/`write_file` commands — do NOT use Tauri FS plugin (scope issues with absolute paths)
 - **CLI args**: `InitialFileState` managed state in Rust, fetched by frontend via `get_initial_file` command (avoids event race condition)
@@ -27,21 +40,18 @@ Tauri v2 desktop Markdown viewer/editor. WYSIWYG editing with TipTap, git-aware,
 - **Sidebar**: `list_markdown_files` Rust command walks filesystem recursively (includes dotdirs like `.claude/`), filtered to `.md`/`.markdown`/`.mdown` only. Skips `node_modules`, `target`, `.git`, `dist`, `build`, `__pycache__`, `.venv`, `.env`, `.pytest_cache`. Git status overlaid from `git_repo_tree`.
 - **Command palette**: Unified `Cmd+K` palette combining file search and commands. Logic in `src/lib/fuzzyMatch.ts` (exported for testing). Empty query shows all commands; typing filters both files and commands. Commands rank above files (+2000 score boost).
 
-## Build & Test → [docs/testing.md](docs/testing.md)
+These constraints are mechanically enforced — see `eslint.config.js` `no-restricted-imports` and `tests/` perf gates. Run `bun run check:all` to verify.
 
-```bash
-bun run check          # TypeScript + ESLint
-bun run test           # Vitest (fuzzy match correctness + performance)
-bun run check:rust     # cargo check + cargo test (18 git tests)
-bun run check:all      # All of the above
-bunx tauri build       # Full release build
+## How to Learn the Codebase (for agents)
 
-# Install
-cp -r src-tauri/target/release/bundle/macos/mpad.app /Applications/
-ln -sf scripts/mpad /usr/local/bin/mpad
-```
+Do NOT rely on static documentation — it goes stale. Instead, discover conventions from the code itself:
 
-CLI wrapper uses `open -a "$TARGET" --args "$FILE_ARG"` — must use `--args`, not positional.
+1. **Lint rules are law**: `eslint.config.js` has `no-restricted-imports` that ban dangerous patterns (FS plugin direct read/write, gray-matter, wrong BubbleMenu import). Violating these fails CI. Read the rule messages for rationale.
+2. **Tests are specs**: `tests/` contains the source-of-truth behavioral contracts. Read test files before modifying any module — they document expected behavior better than prose.
+3. **Perf gates are enforced**: `tests/fuzzyMatch.test.ts` has median-latency gates. `tests/perf.test.ts` enforces bundle/import budgets. New perf-sensitive code must have perf gates.
+4. **Pre-commit runs everything**: `.hooks/pre-commit` is the canonical check sequence. Auto-installed via `bun install` (`prepare` script).
+5. **CI is the gatekeeper**: `.github/workflows/ci.yml` — if it's not checked in CI, it's not enforced. Read this file to understand what gates exist.
+6. **Rust tests tell the git story**: `src-tauri/src/git.rs` `#[cfg(test)]` module — 18 tests covering all git operations with temp repos.
 
 ## Key Files
 
@@ -64,7 +74,7 @@ CLI wrapper uses `open -a "$TARGET" --args "$FILE_ARG"` — must use `--args`, n
 
 `Cmd+K` command palette (files + commands), `Cmd+S` save, `Cmd+O` open, `Cmd+F` find, `Cmd+/` source toggle, `Cmd+D` diff, `Cmd+\` sidebar, `Cmd+L` git log, `Cmd+Shift+Up/Down` heading cycle, `/` on empty line for slash commands. `Cmd+B` is reserved for bold (TipTap built-in) — do NOT reassign it.
 
-## Gotchas → [docs/gotchas.md](docs/gotchas.md)
+## Gotchas
 
 - React 19: refs cannot be read/written during render — use `useEffect` for updates, callbacks for reads
 - React 19: `set-state-in-effect` lint rule — avoid calling setState synchronously in effects; use callbacks or fetch in `.then()` chains instead
@@ -73,3 +83,12 @@ CLI wrapper uses `open -a "$TARGET" --args "$FILE_ARG"` — must use `--args`, n
 - Pre-commit hook at `.hooks/pre-commit` runs tsc, eslint, cargo check, cargo test — auto-installed via `bun install`
 - Diff panel must refresh when switching files — handle in `loadFile`, not via a separate effect (avoids setState-in-effect lint)
 - Sidebar auto-expands `.claude/`, `.cursor/`, `.agents/` directories by default
+
+## Performance Rules
+
+All perf-sensitive code must have mechanical enforcement. See `tests/perf.test.ts` for active gates:
+
+- **Fuzzy match**: median < 5ms for 1000-item filterItems
+- **Bundle size**: Vite build output must stay under budget
+- **Import cost**: No single dependency import > 50ms at startup
+- New perf-sensitive functions: add a benchmark gate in `tests/perf.test.ts`
