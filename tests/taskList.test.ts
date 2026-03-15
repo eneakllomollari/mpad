@@ -172,4 +172,73 @@ describe('TaskList', () => {
     editor.destroy();
     vi.useRealTimers();
   });
+
+  it('preserves pre-existing checked items when a new item is checked', () => {
+    vi.useFakeTimers();
+
+    const editor = createEditor('- [x] already done\n- [ ] new task', true);
+
+    // Check the second (unchecked) item
+    let secondPos = 0;
+    let count = 0;
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'taskItem') {
+        if (count === 1) secondPos = pos;
+        count++;
+      }
+    });
+
+    const secondItem = editor.state.doc.nodeAt(secondPos)!;
+    editor.chain().focus().command(({ tr }) => {
+      tr.setNodeMarkup(secondPos, undefined, { ...secondItem.attrs, checked: true });
+      return true;
+    }).run();
+
+    vi.advanceTimersByTime(900);
+
+    // The newly checked "new task" should be removed, but "already done" must remain
+    let remaining = 0;
+    let remainingText = '';
+    editor.state.doc.descendants((n) => {
+      if (n.type.name === 'taskItem') {
+        remaining++;
+        remainingText = n.textContent;
+      }
+    });
+    expect(remaining).toBe(1);
+    expect(remainingText).toContain('already done');
+
+    editor.destroy();
+    vi.useRealTimers();
+  });
+
+  it('cancels pending removal when file content is replaced via setContent', () => {
+    vi.useFakeTimers();
+
+    const editor = createEditor('- [ ] task A', true);
+
+    // Check the item
+    let pos = 0;
+    editor.state.doc.descendants((node, p) => {
+      if (node.type.name === 'taskItem') { pos = p; return false; }
+    });
+    const item = editor.state.doc.nodeAt(pos)!;
+    editor.chain().focus().command(({ tr }) => {
+      tr.setNodeMarkup(pos, undefined, { ...item.attrs, checked: true });
+      return true;
+    }).run();
+
+    // Simulate file switch: replace content before timeout fires
+    editor.commands.setContent('- [x] file B checked\n- [ ] file B unchecked');
+
+    vi.advanceTimersByTime(900);
+
+    // The stale timeout must NOT delete items from the new file
+    let taskCount = 0;
+    editor.state.doc.descendants((n) => { if (n.type.name === 'taskItem') taskCount++; });
+    expect(taskCount).toBe(2);
+
+    editor.destroy();
+    vi.useRealTimers();
+  });
 });

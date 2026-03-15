@@ -23,27 +23,37 @@ export const TaskItemAutoRemove = Extension.create({
             update(view, prevState) {
               if (view.state.doc.eq(prevState.doc)) return;
 
-              let foundNewlyChecked = false;
+              // Cancel any pending removal on every doc change (prevents
+              // stale timeouts from firing after a file switch via setContent)
+              if (pendingTimeout) {
+                clearTimeout(pendingTimeout);
+                pendingTimeout = null;
+              }
+
+              const newlyCheckedTexts: string[] = [];
               view.state.doc.descendants((node, pos) => {
                 if (node.type.name !== 'taskItem' || !node.attrs.checked) return;
                 try {
                   const prevNode = prevState.doc.nodeAt(pos);
                   if (prevNode?.type.name === 'taskItem' && !prevNode.attrs.checked) {
-                    foundNewlyChecked = true;
+                    newlyCheckedTexts.push(node.textContent);
                   }
                 } catch { /* position shifted */ }
               });
 
-              if (!foundNewlyChecked) return;
+              if (newlyCheckedTexts.length === 0) return;
 
-              if (pendingTimeout) clearTimeout(pendingTimeout);
+              // Only remove items whose text matches what was just checked,
+              // leaving pre-existing checked items untouched
+              const textsToRemove = new Set(newlyCheckedTexts);
+
               pendingTimeout = setTimeout(() => {
                 if (editor.isDestroyed) return;
 
                 editor.chain().command(({ tr, state }) => {
                   const positions: { pos: number; size: number }[] = [];
                   state.doc.descendants((n, p) => {
-                    if (n.type.name === 'taskItem' && n.attrs.checked) {
+                    if (n.type.name === 'taskItem' && n.attrs.checked && textsToRemove.has(n.textContent)) {
                       positions.push({ pos: p, size: n.nodeSize });
                     }
                   });
