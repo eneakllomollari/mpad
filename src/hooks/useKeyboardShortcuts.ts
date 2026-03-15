@@ -20,16 +20,35 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
   useEffect(() => { ref.current = handlers; });
 
   useEffect(() => {
+    const isEditable = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      return t.isContentEditable ||
+        t.tagName === 'INPUT' ||
+        t.tagName === 'TEXTAREA';
+    };
+
     const onKeyDown = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
-      if (!mod) return;
+      const key = e.key;
       const h = ref.current;
 
-      // When the command palette is open, only allow its toggle shortcut through
-      const key = e.key.toLowerCase();
-      if ((e.target as HTMLElement)?.closest?.('.palette') && key !== 'k') return;
+      // [ and ] toggle panels — no modifier needed, but only outside editable areas
+      if (!mod && !e.shiftKey && !e.altKey && (key === '[' || key === ']')) {
+        if (isEditable(e)) return;
+        e.preventDefault();
+        if (key === '[') h.onToggleSidebar?.();
+        else h.onToggleDiff?.();
+        return;
+      }
 
-      switch (key) {
+      if (!mod) return;
+
+      const lower = key.toLowerCase();
+
+      // When the command palette is open, only allow its toggle shortcut through
+      if ((e.target as HTMLElement)?.closest?.('.palette') && lower !== 'k') return;
+
+      switch (lower) {
         case 's':
           e.preventDefault();
           h.onSave?.();
@@ -45,14 +64,6 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
         case '/':
           e.preventDefault();
           h.onToggleSource?.();
-          break;
-        case '[':
-          e.preventDefault();
-          h.onToggleSidebar?.();
-          break;
-        case ']':
-          e.preventDefault();
-          h.onToggleDiff?.();
           break;
         case 'l':
           e.preventDefault();

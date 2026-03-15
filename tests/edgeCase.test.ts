@@ -103,10 +103,12 @@ describe('keyboard shortcut definitions', () => {
     }
   });
 
-  it('sidebar shortcut should use Cmd+[ and diff should use Cmd+]', () => {
+  it('sidebar shortcut should use [ and diff should use ] (no modifier)', () => {
     const src = readFileSync(join(__dirname, '../src/hooks/useKeyboardShortcuts.ts'), 'utf-8');
-    expect(src).toContain("case '[':");
-    expect(src).toContain("case ']':");
+    expect(src).toContain("key === '['");
+    expect(src).toContain("key === ']'");
+    expect(src).toContain('onToggleSidebar');
+    expect(src).toContain('onToggleDiff');
   });
 
   it('global handler should suppress shortcuts when palette is open', () => {

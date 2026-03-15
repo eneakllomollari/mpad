@@ -59,7 +59,7 @@ CLI wrapper uses `open -a "$TARGET" --args "$FILE_ARG"` — must use `--args`, n
 
 ## Shortcuts
 
-`Cmd+K` command palette (files + commands), `Cmd+S` save, `Cmd+O` open, `Cmd+F` find, `Cmd+/` source toggle, `Cmd+[` sidebar (left panel), `Cmd+]` diff (right panel), `Cmd+L` git log, `Cmd+Shift+Up/Down` heading cycle, `/` on empty line for slash commands. `Cmd+B` is reserved for bold (TipTap built-in) — do NOT reassign it.
+`Cmd+K` command palette (files + commands), `Cmd+S` save, `Cmd+O` open, `Cmd+F` find, `Cmd+/` source toggle, `[` sidebar (left panel), `]` diff (right panel), `Cmd+L` git log, `Cmd+Shift+Up/Down` heading cycle, `/` on empty line for slash commands. `[` and `]` are modifier-free shortcuts — they only fire when focus is NOT in an editable area (editor, input, textarea). `Cmd+B` is reserved for bold (TipTap built-in) — do NOT reassign it.
 
 ## Gotchas
 
