@@ -34,8 +34,11 @@ jobs:
       - name: Knip (dead code)
         run: bunx knip
 
-      - name: Vitest
-        run: bun run test
+      - name: Vitest + coverage
+        run: bun run test:coverage
+
+      - name: Perf gates
+        run: bun run test:perf
 
   rust:
     runs-on: ubuntu-latest
@@ -61,3 +64,10 @@ jobs:
       - name: Cargo clippy
         working-directory: src-tauri
         run: cargo clippy -- -D warnings
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Rust coverage
+        working-directory: src-tauri
+        run: cargo llvm-cov --fail-under-lines 50
