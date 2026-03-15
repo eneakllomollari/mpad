@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: TypeScript typecheck
+        run: bun run typecheck
+
+      - name: ESLint
+        run: bun run lint
+
+      - name: OxLint
+        run: bun run oxlint
+
+      - name: Knip (dead code)
+        run: bunx knip
+
+      - name: Vitest + coverage
+        run: bun run test:coverage
+
+      - name: Perf gates
+        run: bun run test:perf
+
+  rust:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
+
+      - name: Cargo check
+        working-directory: src-tauri
+        run: cargo check
+
+      - name: Cargo test
+        working-directory: src-tauri
+        run: cargo test
+
+      - name: Cargo clippy (warnings + perf lints)
+        working-directory: src-tauri
+        run: cargo clippy -- -D warnings -W clippy::perf -W clippy::large_enum_variant -W clippy::needless_collect
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Rust coverage
+        working-directory: src-tauri
+        run: cargo llvm-cov --fail-under-lines 40
