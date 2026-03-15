@@ -1,5 +1,5 @@
 import { Extension } from '@tiptap/core';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { Plugin, PluginKey, Selection } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -124,7 +124,7 @@ function scrollToAnchor(anchor: string, view: EditorView): void {
   if (targetPos !== null) {
     // Place cursor at start of heading and scroll into view
     const tr = view.state.tr.setSelection(
-      view.state.selection.constructor.near(doc.resolve(targetPos + 1)),
+      Selection.near(doc.resolve(targetPos + 1)),
     );
     view.dispatch(tr.scrollIntoView());
     view.focus();
