@@ -17,14 +17,16 @@ Tauri v2 desktop Markdown viewer/editor. WYSIWYG editing with TipTap, git-aware,
 ## Build & Test
 
 ```bash
-bun run check          # TypeScript + ESLint
-bun run test           # Vitest with coverage (must meet thresholds)
-bun run check:rust     # cargo check + cargo test (18 git tests)
-bun run check:all      # All of the above
+bun run check          # TypeScript + ESLint + OxLint + Knip
+bun run test           # Vitest (correctness tests)
+bun run test:coverage  # Vitest + coverage thresholds
+bun run test:perf      # Performance gates (latency budgets)
+bun run check:rust     # cargo check + cargo test + cargo clippy
+bun run check:all      # All of the above — mirrors CI exactly
 bunx tauri build       # Full release build
 ```
 
-All checks run in CI on every PR (`.github/workflows/ci.yml`). Do NOT merge if any fail.
+`bun run check:all` is the single command that mirrors CI. If it passes locally, CI will pass. Do NOT merge if any check fails.
 
 CLI wrapper uses `open -a "$TARGET" --args "$FILE_ARG"` — must use `--args`, not positional.
 
@@ -80,7 +82,7 @@ Do NOT rely on static documentation — it goes stale. Instead, discover convent
 - React 19: `set-state-in-effect` lint rule — avoid calling setState synchronously in effects; use callbacks or fetch in `.then()` chains instead
 - React 19: `react-refresh/only-export-components` — don't export non-component functions from component files; extract shared logic to `src/lib/`
 - git2 feature name is `vendored-libgit2` (not `vendored`)
-- Pre-commit hook at `.hooks/pre-commit` runs tsc, eslint, cargo check, cargo test — auto-installed via `bun install`
+- Pre-commit hook at `.hooks/pre-commit` mirrors CI (tsc, eslint, oxlint, knip, vitest, cargo check/test/clippy) — auto-installed via `bun install`
 - Diff panel must refresh when switching files — handle in `loadFile`, not via a separate effect (avoids setState-in-effect lint)
 - Sidebar auto-expands `.claude/`, `.cursor/`, `.agents/` directories by default
 
@@ -88,7 +90,9 @@ Do NOT rely on static documentation — it goes stale. Instead, discover convent
 
 All perf-sensitive code must have mechanical enforcement. See `tests/perf.test.ts` for active gates:
 
-- **Fuzzy match**: median < 5ms for 1000-item filterItems
-- **Bundle size**: Vite build output must stay under budget
-- **Import cost**: No single dependency import > 50ms at startup
+- **Fuzzy match**: substring < 5ms, fuzzy < 10ms, empty < 1ms (10k files)
+- **Content processing**: preprocess < 2ms, postprocess < 2ms, round-trip < 3ms (500-section doc)
+- **Memory**: filterItems respects limit — no wasted allocation beyond requested count
+- ESLint bans `.forEach()` in `src/` (closure allocation), lodash/moment/ramda (bundle bloat)
+- Clippy enforces `clippy::perf`, `large_enum_variant`, `needless_collect`
 - New perf-sensitive functions: add a benchmark gate in `tests/perf.test.ts`
