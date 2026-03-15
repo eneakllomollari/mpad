@@ -140,4 +140,22 @@ describe('postprocessContent', () => {
     const result = postprocessContent('\\## Heading', null, []);
     expect(result).toContain('## Heading');
   });
+
+  it('tightens task list items with blank lines between them', () => {
+    const loose = '- [x] First task\n\n- [ ] Second task\n\n- [ ] Third task';
+    const result = postprocessContent(loose, null, []);
+    expect(result).toBe('- [x] First task\n- [ ] Second task\n- [ ] Third task\n');
+  });
+
+  it('preserves blank lines between non-task-list content and task items', () => {
+    const md = 'Some text\n\n- [x] First task\n- [ ] Second task';
+    const result = postprocessContent(md, null, []);
+    expect(result).toContain('Some text\n\n- [x] First task');
+  });
+
+  it('does not affect regular bullet lists', () => {
+    const md = '- Item 1\n\n- Item 2\n\n- Item 3';
+    const result = postprocessContent(md, null, []);
+    expect(result).toContain('- Item 1\n\n- Item 2\n\n- Item 3');
+  });
 });

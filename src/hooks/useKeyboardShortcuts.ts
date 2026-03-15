@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 
 interface ShortcutHandlers {
   onSave?: () => void;
+  onNewFile?: () => void;
   onOpen?: () => void;
   onOpenFolder?: () => void;
   onToggleSource?: () => void;
@@ -33,6 +34,10 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
         case 's':
           e.preventDefault();
           h.onSave?.();
+          break;
+        case 'n':
+          e.preventDefault();
+          h.onNewFile?.();
           break;
         case 'o':
           e.preventDefault();

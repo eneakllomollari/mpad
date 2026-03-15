@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { open } from '@tauri-apps/plugin-dialog';
+import { open, save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 
@@ -38,6 +38,7 @@ function App() {
   const [showPalette, setShowPalette] = useState(false);
   const [diff, setDiff] = useState('');
   const [showFind, setShowFind] = useState(false);
+  const [gitStatusKey, setGitStatusKey] = useState(0);
 
   const [, setZoom] = useState(100);
 
@@ -161,29 +162,36 @@ function App() {
     }
   }, [fetchDiff]);
 
+  const refreshAfterSave = useCallback(() => {
+    refreshDiff();
+    setGitStatusKey((k) => k + 1);
+  }, [refreshDiff]);
+
   // Editor update handler
   const handleEditorUpdate = useCallback(
     (md: string) => {
       setContent(md);
       if (filePath) {
-        save(filePath, md, refreshDiff);
+        save(filePath, md, refreshAfterSave);
       }
     },
-    [filePath, save, refreshDiff],
+    [filePath, save, refreshAfterSave],
   );
 
   // Force save (Cmd+S) — write immediately, no debounce
   const handleSave = useCallback(() => {
     if (filePath) {
-      saveImmediate(filePath, contentRef.current).then(refreshDiff);
+      saveImmediate(filePath, contentRef.current).then(refreshAfterSave);
     }
-  }, [filePath, saveImmediate, refreshDiff]);
+  }, [filePath, saveImmediate, refreshAfterSave]);
 
   // Open file dialog (Cmd+O)
   const handleOpen = useCallback(async () => {
     try {
+      const dir = filePathRef.current?.replace(/\/[^/]+$/, '') ?? undefined;
       const selected = await open({
         multiple: false,
+        defaultPath: dir,
         filters: [
           { name: 'Markdown', extensions: ['md', 'markdown', 'mdown'] },
           { name: 'All Files', extensions: ['*'] },
@@ -196,6 +204,27 @@ function App() {
       // Dialog cancelled or unavailable
     }
   }, [loadFile]);
+
+  // New file dialog (Cmd+N)
+  const handleNewFile = useCallback(async () => {
+    try {
+      const dir = filePathRef.current?.replace(/\/[^/]+$/, '') ?? folderPath ?? undefined;
+      const selected = await saveDialog({
+        defaultPath: dir,
+        filters: [
+          { name: 'Markdown', extensions: ['md', 'markdown', 'mdown'] },
+        ],
+      });
+      if (selected && typeof selected === 'string') {
+        let path = selected;
+        if (!/\.(md|markdown|mdown)$/i.test(path)) path += '.md';
+        await invoke('write_file', { path, content: '' });
+        loadFile(path);
+      }
+    } catch {
+      // Dialog cancelled or unavailable
+    }
+  }, [folderPath, loadFile]);
 
   // Open folder dialog (Cmd+Shift+O)
   const handleOpenFolder = useCallback(async () => {
@@ -253,6 +282,7 @@ function App() {
   const paletteCommands: PaletteCommand[] = useMemo(
     () => [
       { id: 'save', label: 'Save', shortcut: `${modKey}S`, action: handleSave },
+      { id: 'new', label: 'New File', shortcut: `${modKey}N`, action: handleNewFile },
       { id: 'open', label: 'Open File', shortcut: `${modKey}O`, action: handleOpen },
       { id: 'open-folder', label: 'Open Folder', shortcut: `${modKey}Shift+O`, action: handleOpenFolder },
       { id: 'find', label: 'Find', shortcut: `${modKey}F`, action: () => setShowFind((v) => !v) },
@@ -264,13 +294,14 @@ function App() {
       { id: 'zoomout', label: 'Zoom Out', shortcut: `${modKey}-`, action: handleZoomOut },
       { id: 'zoomreset', label: 'Zoom Reset', shortcut: `${modKey}0`, action: handleZoomReset },
     ],
-    [handleSave, handleOpen, handleOpenFolder, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
+    [handleSave, handleNewFile, handleOpen, handleOpenFolder, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
   );
 
   // Keyboard shortcuts
   const shortcutHandlers = useMemo(
     () => ({
       onSave: handleSave,
+      onNewFile: handleNewFile,
       onOpen: handleOpen,
       onOpenFolder: handleOpenFolder,
       onToggleSource: () => setShowSource((v) => !v),
@@ -283,7 +314,7 @@ function App() {
       onZoomOut: handleZoomOut,
       onZoomReset: handleZoomReset,
     }),
-    [handleSave, handleOpen, handleOpenFolder, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
+    [handleSave, handleNewFile, handleOpen, handleOpenFolder, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
   );
 
   useKeyboardShortcuts(shortcutHandlers);
@@ -349,6 +380,7 @@ function App() {
         <GitStatusBar
           filePath={filePath}
           repoPath={repoPath}
+          refreshKey={gitStatusKey}
         />
       </div>
 

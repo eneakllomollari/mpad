@@ -106,6 +106,21 @@ function unescapeMarkdown(md: string): string {
   return out.join('\n');
 }
 
+/**
+ * Remove blank lines between consecutive task list items that tiptap-markdown
+ * inserts (tight → loose conversion). Preserves blank lines between regular
+ * list items and non-list content.
+ */
+function tightenTaskLists(md: string): string {
+  let prev = md;
+  for (;;) {
+    const next = prev.replace(/^(- \[[ x]\] .*)(?:\n\n)(- \[[ x]\] )/gm, '$1\n$2');
+    if (next === prev) break;
+    prev = next;
+  }
+  return prev;
+}
+
 export function postprocessContent(
   md: string,
   frontmatter: string | null,
@@ -113,6 +128,7 @@ export function postprocessContent(
   mermaidBlocks: MermaidBlock[] = [],
 ): string {
   let result = unescapeMarkdown(md);
+  result = tightenTaskLists(result);
 
   for (let i = 0; i < xmlBlocks.length; i++) {
     const block = xmlBlocks[i];

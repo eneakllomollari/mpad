@@ -248,6 +248,7 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
   );
 
   const lastKnownContent = useRef(content);
+  const suppressUpdate = useRef(false);
 
   // Ref to always access the latest onUpdate without stale closures in editor callback
   const onUpdateRef = useRef(onUpdate);
@@ -255,6 +256,10 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
 
   const handleUpdate = useCallback(
     (md: string) => {
+      if (suppressUpdate.current) {
+        suppressUpdate.current = false;
+        return;
+      }
       const full = postprocessContent(
         md,
         processedRef.current.frontmatter,
@@ -300,11 +305,12 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
   }, [editor, filePath]);
 
   useEffect(() => {
-    if (showSource) return; // Don't sync to editor while in source mode
+    if (showSource) return;
     if (content !== lastKnownContent.current && editor && !editor.isDestroyed) {
       lastKnownContent.current = content;
       const p = preprocessContent(content);
       processedRef.current = p;
+      suppressUpdate.current = true;
       editor.commands.setContent(p.body);
     }
   }, [content, editor, showSource]);
@@ -325,6 +331,7 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
       const p = preprocessContent(content);
       processedRef.current = p;
       lastKnownContent.current = content;
+      suppressUpdate.current = true;
       editor.commands.setContent(p.body);
     }
   // content and editor are intentionally excluded — only trigger on showSource transition

@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 interface GitStatusBarProps {
   filePath: string | null;
   repoPath: string | null;
+  refreshKey?: number;
 }
 
 interface GitStatus {
@@ -11,7 +12,7 @@ interface GitStatus {
   status: 'clean' | 'modified' | 'untracked' | 'deleted' | 'unknown';
 }
 
-export function GitStatusBar({ filePath, repoPath }: GitStatusBarProps) {
+export function GitStatusBar({ filePath, repoPath, refreshKey = 0 }: GitStatusBarProps) {
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
 
   const canFetch = !!filePath && !!repoPath;
@@ -25,7 +26,7 @@ export function GitStatusBar({ filePath, repoPath }: GitStatusBarProps) {
       .catch(() => { if (!stale) setGitStatus(null); });
 
     return () => { stale = true; };
-  }, [canFetch, filePath, repoPath]);
+  }, [canFetch, filePath, repoPath, refreshKey]);
 
   const displayStatus = canFetch ? gitStatus : null;
 
