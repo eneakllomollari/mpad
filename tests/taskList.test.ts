@@ -1,21 +1,21 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { TaskList } from '@tiptap/extension-task-list';
 import { TaskItem } from '@tiptap/extension-task-item';
 import { Markdown } from 'tiptap-markdown';
+import { TaskItemAutoRemove } from '../src/extensions/TaskItemAutoRemove';
 
-function createEditor(content: string = '') {
-  return new Editor({
-    extensions: [
-      StarterKit,
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      Markdown,
-    ],
-    content,
-  });
+function createEditor(content: string = '', withAutoRemove = false) {
+  const extensions = [
+    StarterKit,
+    TaskList,
+    TaskItem.configure({ nested: true }),
+    Markdown,
+    ...(withAutoRemove ? [TaskItemAutoRemove] : []),
+  ];
+  return new Editor({ extensions, content });
 }
 
 function getMarkdown(editor: Editor): string {
@@ -108,5 +108,68 @@ describe('TaskList', () => {
     expect(md).toContain('[x] done child');
 
     editor.destroy();
+  });
+
+  it('auto-removes checked items after delay when TaskItemAutoRemove is active', async () => {
+    vi.useFakeTimers();
+
+    const editor = createEditor('- [ ] todo\n- [ ] keep', true);
+    const doc = editor.state.doc;
+
+    // Find the first taskItem and check it
+    let taskItemPos = 0;
+    doc.descendants((node, pos) => {
+      if (node.type.name === 'taskItem') {
+        taskItemPos = pos;
+        return false;
+      }
+    });
+
+    const taskItem = doc.nodeAt(taskItemPos)!;
+    editor.chain().focus().command(({ tr }) => {
+      tr.setNodeMarkup(taskItemPos, undefined, { ...taskItem.attrs, checked: true });
+      return true;
+    }).run();
+
+    // Verify the item is checked
+    const checkedItem = editor.state.doc.nodeAt(taskItemPos)!;
+    expect(checkedItem.attrs.checked).toBe(true);
+
+    // Before timeout: item still present
+    let taskCount = 0;
+    editor.state.doc.descendants((n) => { if (n.type.name === 'taskItem') taskCount++; });
+    expect(taskCount).toBe(2);
+
+    // After 800ms: item should be removed
+    vi.advanceTimersByTime(900);
+    let afterCount = 0;
+    editor.state.doc.descendants((n) => { if (n.type.name === 'taskItem') afterCount++; });
+    expect(afterCount).toBe(1);
+
+    // Remaining item should be unchecked
+    let remainingChecked = false;
+    editor.state.doc.descendants((n) => {
+      if (n.type.name === 'taskItem') remainingChecked = n.attrs.checked;
+    });
+    expect(remainingChecked).toBe(false);
+
+    editor.destroy();
+    vi.useRealTimers();
+  });
+
+  it('does not auto-remove pre-existing checked items on load', () => {
+    vi.useFakeTimers();
+
+    const editor = createEditor('- [x] already done\n- [ ] todo', true);
+
+    // The pre-existing checked item should still be there after timeout
+    vi.advanceTimersByTime(1000);
+
+    let taskCount = 0;
+    editor.state.doc.descendants((n) => { if (n.type.name === 'taskItem') taskCount++; });
+    expect(taskCount).toBe(2);
+
+    editor.destroy();
+    vi.useRealTimers();
   });
 });
