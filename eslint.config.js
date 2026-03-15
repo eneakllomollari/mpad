@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'src-tauri']),
+  globalIgnores(['dist', 'src-tauri', 'coverage']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -26,6 +26,14 @@ export default defineConfig([
             group: ['gray-matter'],
             message: 'gray-matter breaks on lone "---". Use the strict regex in contentProcessing.ts.',
           },
+          {
+            group: ['lodash', 'underscore', 'ramda'],
+            message: 'Heavy utility libraries bloat the bundle. Use native JS methods.',
+          },
+          {
+            group: ['moment', 'moment-timezone'],
+            message: 'moment.js is 300kb+. Use Intl or date-fns/tiny if needed.',
+          },
         ],
         paths: [
           {
@@ -40,6 +48,17 @@ export default defineConfig([
           },
         ],
       }],
+    },
+  },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': ['error',
+        {
+          selector: 'CallExpression[callee.property.name="forEach"]',
+          message: 'Use for...of or for loop instead of .forEach() — avoids closure allocation per iteration.',
+        },
+      ],
     },
   },
 ])
