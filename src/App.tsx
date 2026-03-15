@@ -68,8 +68,7 @@ function App() {
       if (textResult.status === 'fulfilled') {
         setContent(textResult.value);
         setFilePath(path);
-        const fileName = path.split('/').pop() || 'mpad';
-        getCurrentWindow().setTitle(fileName).catch(() => {});
+        getCurrentWindow().setTitle('mpad').catch(() => {});
       } else {
         console.error('Failed to read file:', textResult.reason);
         return;
@@ -257,8 +256,8 @@ function App() {
       { id: 'open-folder', label: 'Open Folder', shortcut: `${modKey}Shift+O`, action: handleOpenFolder },
       { id: 'find', label: 'Find', shortcut: `${modKey}F`, action: () => setShowFind((v) => !v) },
       { id: 'source', label: 'Toggle Source', shortcut: `${modKey}/`, action: () => setShowSource((v) => !v) },
-      { id: 'diff', label: 'Toggle Diff', shortcut: `${modKey}D`, action: handleToggleDiff },
-      { id: 'sidebar', label: 'Toggle Sidebar', shortcut: `${modKey}\\`, action: () => setShowSidebar((v) => !v) },
+      { id: 'sidebar', label: 'Toggle Sidebar', shortcut: `${modKey}[`, action: () => setShowSidebar((v) => !v) },
+      { id: 'diff', label: 'Toggle Diff', shortcut: `${modKey}]`, action: handleToggleDiff },
       { id: 'gitlog', label: 'Toggle Git Log', shortcut: `${modKey}L`, action: () => setShowGitLog((v) => !v) },
       { id: 'zoomin', label: 'Zoom In', shortcut: `${modKey}+`, action: handleZoomIn },
       { id: 'zoomout', label: 'Zoom Out', shortcut: `${modKey}-`, action: handleZoomOut },
@@ -290,67 +289,78 @@ function App() {
 
   return (
     <div className="app-layout">
-      {showSidebar && (
-        <Suspense>
-          <Sidebar
-            folderPath={folderPath}
-            repoPath={repoPath}
-            currentFile={filePath}
-            onFileSelect={loadFile}
-            visible={showSidebar}
-            style={{ width: sidebar.size }}
-          />
-          <div className="resize-handle resize-handle-h" onMouseDown={sidebar.onMouseDown} />
-        </Suspense>
-      )}
-
-      <div className="app-main">
-        <div className="editor-area" style={{ display: 'flex' }}>
-          <div style={{ flex: 1, overflow: 'auto' }}>
-            {filePath ? (
-              <Editor
-                content={content}
-                onUpdate={handleEditorUpdate}
-                showSource={showSource}
-                filePath={filePath}
-                showFind={showFind}
-                onCloseFindBar={() => setShowFind(false)}
-              />
-            ) : (
-              <div className="empty-state">
-                <span>
-                  Open a file with{' '}
-                  <kbd style={{ opacity: 0.7 }}>{modKey}K</kbd> or pass a path as
-                  argument
-                </span>
-              </div>
-            )}
-          </div>
-
-          {showDiff && (
-            <Suspense>
-              <div className="resize-handle resize-handle-h" onMouseDown={diffPanel.onMouseDown} />
-              <DiffView diff={diff} visible={showDiff} style={{ width: diffPanel.size }} />
-            </Suspense>
-          )}
-        </div>
-
-        {showGitLog && (
+      <div className="app-content">
+        {showSidebar && (
           <Suspense>
-            <div className="resize-handle resize-handle-v" onMouseDown={gitLog.onMouseDown} />
-            <GitLog
+            <Sidebar
+              folderPath={folderPath}
               repoPath={repoPath}
-              filePath={filePath}
-              style={{ height: gitLog.size }}
+              currentFile={filePath}
+              onFileSelect={loadFile}
+              visible={showSidebar}
+              style={{ width: sidebar.size }}
             />
+            <div className="resize-handle resize-handle-h" onMouseDown={sidebar.onMouseDown} />
           </Suspense>
         )}
 
-        <GitStatusBar
-          filePath={filePath}
-          repoPath={repoPath}
-        />
+        <div className="app-main">
+          <div className="editor-area" style={{ display: 'flex' }}>
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              {filePath ? (
+                <Editor
+                  content={content}
+                  onUpdate={handleEditorUpdate}
+                  showSource={showSource}
+                  filePath={filePath}
+                  showFind={showFind}
+                  onCloseFindBar={() => setShowFind(false)}
+                />
+              ) : (
+                <div className="empty-state">
+                  <div className="empty-state-actions">
+                    <button type="button" className="empty-action" onClick={handleOpen}>
+                      <kbd>{modKey}O</kbd>
+                      <span>Open File</span>
+                    </button>
+                    <button type="button" className="empty-action" onClick={handleOpenFolder}>
+                      <kbd>{modKey}⇧O</kbd>
+                      <span>Open Folder</span>
+                    </button>
+                    <button type="button" className="empty-action" onClick={() => setShowPalette(true)}>
+                      <kbd>{modKey}K</kbd>
+                      <span>Command Palette</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {showDiff && (
+              <Suspense>
+                <div className="resize-handle resize-handle-h" onMouseDown={diffPanel.onMouseDown} />
+                <DiffView diff={diff} visible={showDiff} style={{ width: diffPanel.size }} />
+              </Suspense>
+            )}
+          </div>
+
+          {showGitLog && (
+            <Suspense>
+              <div className="resize-handle resize-handle-v" onMouseDown={gitLog.onMouseDown} />
+              <GitLog
+                repoPath={repoPath}
+                filePath={filePath}
+                style={{ height: gitLog.size }}
+              />
+            </Suspense>
+          )}
+        </div>
       </div>
+
+      <GitStatusBar
+        filePath={filePath}
+        repoPath={repoPath}
+      />
 
       {showPalette && (
         <Suspense>

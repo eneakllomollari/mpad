@@ -46,13 +46,13 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
           e.preventDefault();
           h.onToggleSource?.();
           break;
-        case 'd':
-          e.preventDefault();
-          h.onToggleDiff?.();
-          break;
-        case '\\':
+        case '[':
           e.preventDefault();
           h.onToggleSidebar?.();
+          break;
+        case ']':
+          e.preventDefault();
+          h.onToggleDiff?.();
           break;
         case 'l':
           e.preventDefault();

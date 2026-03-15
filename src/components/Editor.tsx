@@ -17,6 +17,7 @@ import type { LinkResolverStorage } from '../extensions/LinkResolver';
 import { preprocessContent, postprocessContent } from '../lib/contentProcessing';
 import type { Processed } from '../lib/contentProcessing';
 import { SearchHighlight } from '../extensions/SearchHighlight';
+import { TaskItemAutoRemove } from '../extensions/TaskItemAutoRemove';
 import { FindBar } from './FindBar';
 
 const lowlight = createLowlight(common);
@@ -243,6 +244,7 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
       LinkResolver,
       HeadingCycle,
       SearchHighlight,
+      TaskItemAutoRemove,
     ],
     [],
   );

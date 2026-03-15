@@ -555,7 +555,15 @@ body {
 
 .app-layout {
   display: flex;
+  flex-direction: column;
   height: 100vh;
+  overflow: hidden;
+}
+
+.app-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -784,6 +792,11 @@ body {
   color: var(--text-secondary);
 }
 
+.status-bar-filename {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
 .git-status-clean { color: var(--git-added); }
 .git-status-modified { color: var(--git-modified); }
 .git-status-untracked { color: var(--git-untracked); }
@@ -944,6 +957,33 @@ body {
 .empty-state > span {
   font-weight: 400;
   letter-spacing: 0.005em;
+}
+
+.empty-state-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.empty-action {
+  display: flex;
+  align-items: center;
+  gap: 0.85em;
+  padding: 0.55em 1.1em;
+  background: none;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 0.88em;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.empty-action:hover {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--text-primary);
 }
 
 .empty-state kbd {

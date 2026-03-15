@@ -103,9 +103,10 @@ describe('keyboard shortcut definitions', () => {
     }
   });
 
-  it('sidebar shortcut should use Cmd+backslash', () => {
+  it('sidebar shortcut should use Cmd+[ and diff should use Cmd+]', () => {
     const src = readFileSync(join(__dirname, '../src/hooks/useKeyboardShortcuts.ts'), 'utf-8');
-    expect(src).toContain("case '\\\\':");
+    expect(src).toContain("case '[':");
+    expect(src).toContain("case ']':");
   });
 
   it('global handler should suppress shortcuts when palette is open', () => {

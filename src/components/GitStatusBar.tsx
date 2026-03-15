@@ -37,6 +37,8 @@ export function GitStatusBar({ filePath, repoPath }: GitStatusBarProps) {
     ? displayStatus.status
     : '';
 
+  const fileName = filePath?.split('/').pop() ?? null;
+
   return (
     <div className="status-bar">
       <div className="status-bar-left">
@@ -48,8 +50,11 @@ export function GitStatusBar({ filePath, repoPath }: GitStatusBarProps) {
         ) : filePath ? (
           <span>No git repo</span>
         ) : (
-          <span>No file open</span>
+          <span>mpad</span>
         )}
+      </div>
+      <div className="status-bar-right">
+        {fileName && <span className="status-bar-filename">{fileName}</span>}
       </div>
     </div>
   );

@@ -59,7 +59,7 @@ CLI wrapper uses `open -a "$TARGET" --args "$FILE_ARG"` — must use `--args`, n
 
 ## Shortcuts
 
-`Cmd+K` command palette (files + commands), `Cmd+S` save, `Cmd+O` open, `Cmd+F` find, `Cmd+/` source toggle, `Cmd+D` diff, `Cmd+\` sidebar, `Cmd+L` git log, `Cmd+Shift+Up/Down` heading cycle, `/` on empty line for slash commands. `Cmd+B` is reserved for bold (TipTap built-in) — do NOT reassign it.
+`Cmd+K` command palette (files + commands), `Cmd+S` save, `Cmd+O` open, `Cmd+F` find, `Cmd+/` source toggle, `Cmd+[` sidebar (left panel), `Cmd+]` diff (right panel), `Cmd+L` git log, `Cmd+Shift+Up/Down` heading cycle, `/` on empty line for slash commands. `Cmd+B` is reserved for bold (TipTap built-in) — do NOT reassign it.
 
 ## Gotchas
 
@@ -70,3 +70,7 @@ CLI wrapper uses `open -a "$TARGET" --args "$FILE_ARG"` — must use `--args`, n
 - Pre-commit hook at `.hooks/pre-commit` runs tsc, eslint, cargo check, cargo test
 - Diff panel must refresh when switching files — handle in `loadFile`, not via a separate effect (avoids setState-in-effect lint)
 - Sidebar auto-expands `.claude/`, `.cursor/`, `.agents/` directories by default
+- **Panel color consistency**: All panel backgrounds (sidebar, diff, git log, status bar) MUST use the same background color. In dark mode, `--bg-secondary` and `--sidebar-bg` must be identical. Do NOT introduce new panel background values that break this consistency.
+- **Status bar**: Must span the full window width (placed outside `.app-content`, not inside `.app-main`). No gap between sidebar and main content at the status bar level.
+- **Task items**: Checked task items auto-remove from the document after 800ms delay via `TaskItemAutoRemove` extension. This is the intended UX — do NOT disable it.
+- **Window title**: Set to "mpad" only (not the filename). Filename is shown in the status bar for in-app display.
