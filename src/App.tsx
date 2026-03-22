@@ -39,6 +39,7 @@ function App() {
   const [showPalette, setShowPalette] = useState(false);
   const [diff, setDiff] = useState('');
   const [showFind, setShowFind] = useState(false);
+  const [findRequestToken, setFindRequestToken] = useState(0);
 
   const [, setZoom] = useState(100);
 
@@ -238,12 +239,17 @@ function App() {
     applyZoom(100);
   }, [applyZoom]);
 
+  const openFind = useCallback(() => {
+    setShowFind(true);
+    setFindRequestToken((token) => token + 1);
+  }, []);
+
   // Palette commands
   const paletteCommands: PaletteCommand[] = useMemo(
     () => [
       { id: 'save', label: 'Save', shortcut: `${modKey}S`, action: handleSave },
       { id: 'open', label: 'Open', shortcut: `${modKey}O`, action: handleOpen },
-      { id: 'find', label: 'Find', shortcut: `${modKey}F`, action: () => setShowFind((v) => !v) },
+      { id: 'find', label: 'Find', shortcut: `${modKey}F`, action: openFind },
       { id: 'source', label: 'Toggle Source', shortcut: `${modKey}/`, action: () => setShowSource((v) => !v) },
       { id: 'sidebar', label: 'Toggle Sidebar', shortcut: '[', action: () => setShowSidebar((v) => !v) },
       { id: 'diff', label: 'Toggle Diff', shortcut: ']', action: handleToggleDiff },
@@ -252,7 +258,7 @@ function App() {
       { id: 'zoomout', label: 'Zoom Out', shortcut: `${modKey}-`, action: handleZoomOut },
       { id: 'zoomreset', label: 'Zoom Reset', shortcut: `${modKey}0`, action: handleZoomReset },
     ],
-    [handleSave, handleOpen, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
+    [handleSave, handleOpen, openFind, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
   );
 
   // Keyboard shortcuts
@@ -265,12 +271,12 @@ function App() {
       onToggleSidebar: () => setShowSidebar((v) => !v),
       onToggleGitLog: () => setShowGitLog((v) => !v),
       onToggleCheatsheet: () => setShowPalette((v) => !v),
-      onFind: () => setShowFind((v) => !v),
+      onFind: openFind,
       onZoomIn: handleZoomIn,
       onZoomOut: handleZoomOut,
       onZoomReset: handleZoomReset,
     }),
-    [handleSave, handleOpen, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
+    [handleSave, handleOpen, openFind, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
   );
 
   useKeyboardShortcuts(shortcutHandlers);
@@ -314,6 +320,7 @@ function App() {
                   showSource={showSource}
                   filePath={filePath}
                   showFind={showFind}
+                  findRequestToken={findRequestToken}
                   onCloseFindBar={() => setShowFind(false)}
                 />
               ) : (
