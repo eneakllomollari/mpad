@@ -6,6 +6,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import type { Editor } from '@tiptap/core';
 import { FindBar } from '../src/components/FindBar';
 
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
 function createEditorStub(): Editor {
   return {
     isDestroyed: false,
@@ -43,8 +45,11 @@ describe('FindBar activation', () => {
     HTMLElement.prototype.scrollIntoView = scrollIntoViewSpy;
   });
 
-  afterEach(() => {
-    root.unmount();
+  afterEach(async () => {
+    await act(async () => {
+      root.unmount();
+      await Promise.resolve();
+    });
     document.body.removeChild(container);
     vi.unstubAllGlobals();
   });
