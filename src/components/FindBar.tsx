@@ -5,6 +5,7 @@ import type { SearchHighlightStorage } from '../extensions/SearchHighlight';
 interface FindBarProps {
   editor: Editor | null;
   visible: boolean;
+  activationToken: number;
   onClose: () => void;
 }
 
@@ -20,19 +21,24 @@ function clearSearch(editor: Editor | null) {
   editor.view.dispatch(editor.state.tr);
 }
 
-export function FindBar({ editor, visible, onClose }: FindBarProps) {
+export function FindBar({ editor, visible, activationToken, onClose }: FindBarProps) {
+  const barRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
 
-  // Focus input when bar opens; clear search highlights on cleanup (covers
-  // both Escape/close-button and Cmd+F toggle which bypasses handleClose)
+  // Focus and reveal the bar on every explicit find request.
   useEffect(() => {
     if (visible) {
       requestAnimationFrame(() => {
+        barRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         inputRef.current?.focus();
         inputRef.current?.select();
       });
     }
+  }, [activationToken, visible]);
+
+  // Clear search highlights when the bar closes or unmounts.
+  useEffect(() => {
     return () => { clearSearch(editor); };
   }, [visible, editor]);
 
@@ -91,7 +97,7 @@ export function FindBar({ editor, visible, onClose }: FindBarProps) {
   const current = total > 0 ? (s?.activeIndex ?? 0) + 1 : 0;
 
   return (
-    <div className="find-bar">
+    <div ref={barRef} className="find-bar">
       <input
         ref={inputRef}
         type="text"

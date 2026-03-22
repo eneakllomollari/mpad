@@ -16,6 +16,13 @@ import { LinkResolver } from '../extensions/LinkResolver';
 import type { LinkResolverStorage } from '../extensions/LinkResolver';
 import { preprocessContent, postprocessContent } from '../lib/contentProcessing';
 import type { Processed } from '../lib/contentProcessing';
+import { shouldOpenSlashMenu } from '../lib/editorInteractions';
+import {
+  cacheEditorSession,
+  getCachedEditorSession,
+  loadEditorDocument,
+  type CachedEditorSession,
+} from '../lib/editorSession';
 import { SearchHighlight } from '../extensions/SearchHighlight';
 import { TaskItemAutoRemove } from '../extensions/TaskItemAutoRemove';
 import { FindBar } from './FindBar';
@@ -58,6 +65,7 @@ interface EditorProps {
   showSource: boolean;
   filePath: string | null;
   showFind: boolean;
+  findRequestToken: number;
   onCloseFindBar: () => void;
 }
 
@@ -219,7 +227,15 @@ const bubbleItems: { mark: string; label: React.ReactNode; command: string }[] =
   { mark: 'highlight', label: 'H', command: 'toggleHighlight' },
 ];
 
-export function Editor({ content, onUpdate, showSource, filePath, showFind, onCloseFindBar }: EditorProps) {
+export function Editor({
+  content,
+  onUpdate,
+  showSource,
+  filePath,
+  showFind,
+  findRequestToken,
+  onCloseFindBar,
+}: EditorProps) {
   const processedRef = useRef<Processed>({
     frontmatter: null,
     body: '',
@@ -228,6 +244,8 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
   });
 
   const [showSlashMenu, setShowSlashMenu] = useState(false);
+  const sessionCacheRef = useRef<Map<string, CachedEditorSession>>(new Map());
+  const prevFilePathRef = useRef(filePath);
 
   const processed = useMemo(() => {
     const p = preprocessContent(content);
@@ -295,15 +313,11 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
       handleUpdate(md);
     },
     editorProps: {
-      handleKeyDown: (_view, event) => {
-        if (event.key === '/' && !event.metaKey && !event.ctrlKey) {
-          if (editor) {
-            const { $from } = editor.state.selection;
-            if ($from.parent.textContent === '') {
-              setShowSlashMenu(true);
-              return true;
-            }
-          }
+      handleKeyDown: (view, event) => {
+        if (shouldOpenSlashMenu(view, event)) {
+          event.preventDefault();
+          setShowSlashMenu(true);
+          return true;
         }
         return false;
       },
@@ -318,14 +332,43 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
   }, [editor, filePath]);
 
   useEffect(() => {
-    if (showSource) return; // Don't sync to editor while in source mode
-    if (content !== lastKnownContent.current && editor && !editor.isDestroyed) {
-      lastKnownContent.current = content;
-      const p = preprocessContent(content);
-      processedRef.current = p;
-      editor.commands.setContent(p.body);
+    if (!editor || editor.isDestroyed) {
+      prevFilePathRef.current = filePath;
+      return;
     }
-  }, [content, editor, showSource]);
+
+    if (showSource) {
+      prevFilePathRef.current = filePath;
+      return;
+    }
+
+    const previousFilePath = prevFilePathRef.current;
+    const switchingFiles = previousFilePath !== filePath;
+    const processedContent = preprocessContent(content);
+
+    processedRef.current = processedContent;
+
+    if (switchingFiles) {
+      cacheEditorSession(sessionCacheRef.current, previousFilePath, editor, lastKnownContent.current);
+      setShowSlashMenu(false);
+
+      const cachedSession = getCachedEditorSession(sessionCacheRef.current, filePath, content);
+
+      if (cachedSession) {
+        editor.view.updateState(cachedSession.state);
+        lastKnownContent.current = cachedSession.content;
+        prevFilePathRef.current = filePath;
+        return;
+      }
+    }
+
+    if (content !== lastKnownContent.current) {
+      lastKnownContent.current = content;
+      loadEditorDocument(editor, processedContent.body);
+    }
+
+    prevFilePathRef.current = filePath;
+  }, [content, editor, filePath, showSource]);
 
   const handleSourceChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -343,7 +386,7 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
       const p = preprocessContent(content);
       processedRef.current = p;
       lastKnownContent.current = content;
-      editor.commands.setContent(p.body);
+      loadEditorDocument(editor, p.body);
     }
   // content and editor are intentionally excluded — only trigger on showSource transition
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -397,7 +440,12 @@ export function Editor({ content, onUpdate, showSource, filePath, showFind, onCl
           </div>
         </BubbleMenu>
       )}
-      <FindBar editor={editor} visible={showFind} onClose={onCloseFindBar} />
+      <FindBar
+        editor={editor}
+        visible={showFind}
+        activationToken={findRequestToken}
+        onClose={onCloseFindBar}
+      />
       <EditorContent editor={editor} />
       {showSlashMenu && editor && (
         <SlashMenu editor={editor} onClose={() => setShowSlashMenu(false)} />
