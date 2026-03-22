@@ -303,6 +303,14 @@ export function Editor({
     [],
   );
 
+  const focusEditorAfterFileSwitch = useCallback((targetEditor: NonNullable<ReturnType<typeof useEditor>>) => {
+    requestAnimationFrame(() => {
+      if (!targetEditor.isDestroyed) {
+        targetEditor.commands.focus();
+      }
+    });
+  }, []);
+
   const editor = useEditor({
     extensions,
     content: processed.body,
@@ -357,9 +365,16 @@ export function Editor({
       if (cachedSession) {
         editor.view.updateState(cachedSession.state);
         lastKnownContent.current = cachedSession.content;
+        focusEditorAfterFileSwitch(editor);
         prevFilePathRef.current = filePath;
         return;
       }
+
+      lastKnownContent.current = content;
+      loadEditorDocument(editor, processedContent.body);
+      focusEditorAfterFileSwitch(editor);
+      prevFilePathRef.current = filePath;
+      return;
     }
 
     if (content !== lastKnownContent.current) {
@@ -368,7 +383,7 @@ export function Editor({
     }
 
     prevFilePathRef.current = filePath;
-  }, [content, editor, filePath, showSource]);
+  }, [content, editor, filePath, focusEditorAfterFileSwitch, showSource]);
 
   const handleSourceChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
