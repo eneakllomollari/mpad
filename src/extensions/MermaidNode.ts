@@ -11,7 +11,7 @@ const THEME_VARS = {
     lineColor: '#6b5d52', textColor: '#d4d0ca', mainBkg: '#3a2e28', nodeBorder: '#5c4a3e',
     clusterBkg: '#2e2a22', clusterBorder: '#4a3e34', titleColor: '#ece8e2',
     edgeLabelBackground: '#242320', nodeTextColor: '#d4d0ca', background: '#1c1b19',
-    fontFamily: 'Inter, -apple-system, sans-serif', fontSize: '14px',
+    fontFamily: 'Instrument Sans Variable, Instrument Sans, DM Sans, -apple-system, sans-serif', fontSize: '14px',
   },
   light: {
     primaryColor: '#f5ebe4', primaryTextColor: '#2c2825', primaryBorderColor: '#c4a48c',
@@ -20,7 +20,7 @@ const THEME_VARS = {
     lineColor: '#a09080', textColor: '#2c2825', mainBkg: '#f5ebe4', nodeBorder: '#c4a48c',
     clusterBkg: '#faf5f0', clusterBorder: '#d4bca8', titleColor: '#1a1715',
     edgeLabelBackground: '#faf8f5', nodeTextColor: '#2c2825', background: '#faf8f5',
-    fontFamily: 'Inter, -apple-system, sans-serif', fontSize: '14px',
+    fontFamily: 'Instrument Sans Variable, Instrument Sans, DM Sans, -apple-system, sans-serif', fontSize: '14px',
   },
 };
 
