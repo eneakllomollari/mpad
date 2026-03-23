@@ -12,7 +12,7 @@ Tauri v2 desktop Markdown viewer/editor. WYSIWYG editing with TipTap, git-aware,
 - **Git**: git2 crate with `vendored-libgit2` feature
 - **Tests**: Vitest (frontend), cargo test (Rust — 18 git tests)
 
-###### **Theme**: Warm editorial — terracotta `#c4603c`, Source Serif 4, DM Sans, JetBrains Mono
+###### **Theme**: Warm product minimalism — terracotta `#c4603c`, Instrument Sans Variable, JetBrains Mono
 
 ## Build & Test
 

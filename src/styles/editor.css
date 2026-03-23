@@ -72,8 +72,8 @@ body {
   max-width: 60rem;
   margin: 0 auto;
   font-family: var(--font-body);
-  font-size: 17px;
-  line-height: 1.78;
+  font-size: 16px;
+  line-height: 1.72;
   color: var(--text-primary);
   font-feature-settings: 'liga' 1, 'kern' 1, 'onum' 0;
   font-optical-sizing: auto;
@@ -93,34 +93,34 @@ body {
 .tiptap h6 {
   font-family: var(--font-body);
   color: var(--heading-color);
-  font-weight: 600;
-  line-height: 1.25;
+  font-weight: 620;
+  line-height: 1.18;
   margin-top: 2.2em;
   margin-bottom: 0.55em;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   font-optical-sizing: auto;
 }
 
 .tiptap h1 {
-  font-size: 2.2em;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
+  font-size: 2.05em;
+  font-weight: 680;
+  letter-spacing: -0.038em;
+  line-height: 1.08;
   margin-top: 0;
 }
 
 .tiptap h2 {
-  font-size: 1.5em;
-  font-weight: 600;
-  letter-spacing: -0.018em;
+  font-size: 1.38em;
+  font-weight: 640;
+  letter-spacing: -0.024em;
   padding-bottom: 0.3em;
   border-bottom: 1px solid var(--border-light);
 }
 
 .tiptap h3 {
-  font-size: 1.22em;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: 1.12em;
+  font-weight: 620;
+  letter-spacing: -0.018em;
 }
 
 .tiptap h4 {
@@ -147,7 +147,7 @@ body {
 /* ── Paragraphs & Text ─────────────────────────────── */
 
 .tiptap p {
-  margin-bottom: 0.9em;
+  margin-bottom: 0.82em;
 }
 
 .tiptap strong {
