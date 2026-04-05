@@ -37,3 +37,6 @@ docs/plans/
 
 # Coverage reports
 coverage/
+
+# Expect test sessions
+.expect/
