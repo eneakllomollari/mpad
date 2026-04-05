@@ -26,14 +26,23 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
         t.tagName === 'TEXTAREA';
     };
 
+    const isFocusedControl = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      return t.getAttribute('role') === 'treeitem' ||
+        t.getAttribute('role') === 'separator' ||
+        t.getAttribute('role') === 'option' ||
+        t.closest?.('.sidebar') !== null ||
+        t.closest?.('.find-bar') !== null;
+    };
+
     const onKeyDown = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
       const key = e.key;
       const h = ref.current;
 
-      // [ and ] toggle panels — no modifier needed, but only outside editable areas
+      // [ and ] toggle panels — no modifier needed, but only outside editable/focusable controls
       if (!mod && !e.shiftKey && !e.altKey && (key === '[' || key === ']')) {
-        if (isEditable(e)) return;
+        if (isEditable(e) || isFocusedControl(e)) return;
         e.preventDefault();
         if (key === '[') h.onToggleSidebar?.();
         else h.onToggleDiff?.();

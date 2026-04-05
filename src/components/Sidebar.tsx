@@ -143,7 +143,7 @@ function TreeItem({
           style={{ paddingLeft }}
           role="treeitem"
           aria-expanded={expanded}
-          tabIndex={0}
+          tabIndex={-1}
           onClick={() => setExpanded(!expanded)}
           onKeyDown={(e) => handleKeyDown(e, () => setExpanded(!expanded))}
         >
@@ -179,7 +179,7 @@ function TreeItem({
       className={`tree-item ${isActive ? 'active' : ''}`}
       style={{ paddingLeft }}
       role="treeitem"
-      tabIndex={0}
+      tabIndex={isActive ? 0 : -1}
       aria-current={isActive ? 'page' : undefined}
       aria-label={gitLabel ? `${node.name} (${gitLabel})` : node.name}
       onClick={() => onFileSelect(absolutePath)}
