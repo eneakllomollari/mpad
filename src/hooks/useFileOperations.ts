@@ -20,6 +20,7 @@ export function useFileOperations(): FileOperationsResult {
   }, []);
 
   const doWrite = useCallback(async (path: string, content: string) => {
+    if (!window.__TAURI_INTERNALS__) return;
     try {
       await invoke('write_file', { path, content });
     } catch (err) {
