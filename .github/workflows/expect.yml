@@ -1,5 +1,6 @@
 # Runs Expect browser tests in CI on every pull request.
 # Expect reads the PR diff, generates a test plan, and validates changes in a real browser.
+# Requires ANTHROPIC_API_KEY repository secret — skips gracefully if not set.
 name: Expect CI
 
 on:
@@ -10,6 +11,7 @@ jobs:
   expect:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: ${{ vars.EXPECT_ENABLED == 'true' }}
     permissions:
       contents: read
       pull-requests: write
@@ -29,6 +31,9 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit firefox
