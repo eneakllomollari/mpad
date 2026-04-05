@@ -38,7 +38,10 @@ export function getCachedEditorSession(
 }
 
 export function loadEditorDocument(editor: Editor, content: string): void {
-  const document = createDocument(content, editor.schema);
+  const mdParser = (editor.storage as unknown as Record<string, { parser?: { parse?: (md: string) => string } }>)
+    .markdown?.parser;
+  const parsed = mdParser?.parse ? mdParser.parse(content) : content;
+  const document = createDocument(parsed, editor.schema);
   const tr = editor.state.tr.replaceWith(0, editor.state.doc.content.size, document);
 
   tr.setMeta('preventUpdate', true);

@@ -98,6 +98,16 @@ function statusColor(status: string): string | undefined {
   }
 }
 
+function statusLabel(status: string): string | undefined {
+  switch (status) {
+    case 'modified': return 'modified';
+    case 'untracked':
+    case 'new': return 'new file';
+    case 'deleted': return 'deleted';
+    default: return undefined;
+  }
+}
+
 function TreeItem({
   node,
   depth,
@@ -113,11 +123,17 @@ function TreeItem({
 }) {
   const [expanded, setExpanded] = useState(() => {
     if (depth < 1) return true;
-    // Auto-expand agent/skill directories
     const root = node.fullPath.split('/')[0];
     return root === '.claude' || root === '.cursor' || root === '.agents';
   });
   const paddingLeft = `${0.75 + depth * 0.75}em`;
+
+  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      action();
+    }
+  };
 
   if (node.isDir) {
     return (
@@ -125,14 +141,18 @@ function TreeItem({
         <div
           className="tree-item tree-dir"
           style={{ paddingLeft }}
+          role="treeitem"
+          aria-expanded={expanded}
+          tabIndex={-1}
           onClick={() => setExpanded(!expanded)}
+          onKeyDown={(e) => handleKeyDown(e, () => setExpanded(!expanded))}
         >
-          <span className="tree-dir-toggle">{expanded ? '\u25BE' : '\u25B8'}</span>
+          <span className="tree-dir-toggle" aria-hidden="true">{expanded ? '\u25BE' : '\u25B8'}</span>
           {node.name}
         </div>
-        {expanded &&
-          node.children
-            .map((child) => (
+        {expanded && (
+          <div role="group">
+            {node.children.map((child) => (
               <TreeItem
                 key={child.fullPath}
                 node={child}
@@ -142,6 +162,8 @@ function TreeItem({
                 onFileSelect={onFileSelect}
               />
             ))}
+          </div>
+        )}
       </>
     );
   }
@@ -150,17 +172,24 @@ function TreeItem({
   const absolutePath = `${base}${node.fullPath}`;
   const isActive = currentFile === absolutePath;
   const dotColor = statusColor(node.status);
+  const gitLabel = statusLabel(node.status);
 
   return (
     <div
       className={`tree-item ${isActive ? 'active' : ''}`}
       style={{ paddingLeft }}
+      role="treeitem"
+      tabIndex={isActive ? 0 : -1}
+      aria-current={isActive ? 'page' : undefined}
+      aria-label={gitLabel ? `${node.name} (${gitLabel})` : node.name}
       onClick={() => onFileSelect(absolutePath)}
+      onKeyDown={(e) => handleKeyDown(e, () => onFileSelect(absolutePath))}
     >
       {dotColor && (
         <span
           className="status-dot"
           style={{ background: dotColor }}
+          aria-hidden="true"
         />
       )}
       {node.name}
@@ -217,9 +246,9 @@ export function Sidebar({
   if (!visible) return null;
 
   return (
-    <div className="sidebar" style={style}>
+    <nav className="sidebar" style={style} aria-label="File explorer">
       <div className="sidebar-header">{folderPath ? folderPath.split('/').filter(Boolean).pop() : 'Files'}</div>
-      <div className="file-tree">
+      <div className="file-tree" role="tree" aria-label="Files">
         {tree.length === 0 && !folderPath && (
           <div style={{ padding: '0.75em', color: 'var(--text-muted)' }}>
             Open a folder with {'\u2318'}Shift+O
@@ -237,6 +266,6 @@ export function Sidebar({
             />
           ))}
       </div>
-    </div>
+    </nav>
   );
 }

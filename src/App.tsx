@@ -37,6 +37,7 @@ function App() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showGitLog, setShowGitLog] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
+  const [paletteKey, setPaletteKey] = useState(0);
   const [diff, setDiff] = useState('');
   const [showFind, setShowFind] = useState(false);
   const [findRequestToken, setFindRequestToken] = useState(0);
@@ -281,7 +282,12 @@ function App() {
       onToggleDiff: handleToggleDiff,
       onToggleSidebar: () => setShowSidebar((v) => !v),
       onToggleGitLog: () => setShowGitLog((v) => !v),
-      onToggleCheatsheet: () => setShowPalette((v) => !v),
+      onToggleCheatsheet: () => {
+        setShowPalette((v) => {
+          if (!v) setPaletteKey((k) => k + 1);
+          return !v;
+        });
+      },
       onFind: openFind,
       onZoomIn: handleZoomIn,
       onZoomOut: handleZoomOut,
@@ -315,13 +321,13 @@ function App() {
                   visible={showSidebar}
                   style={{ width: sidebar.size }}
                 />
-                <div className="resize-handle resize-handle-h" onMouseDown={sidebar.onMouseDown} />
+                <div className="resize-handle resize-handle-h" onMouseDown={sidebar.onMouseDown} onKeyDown={sidebar.onKeyDown} {...sidebar.ariaProps} />
               </Suspense>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="app-main">
+        <main className="app-main">
           <div className="editor-area">
             <div className="editor-container">
               {filePath ? (
@@ -341,7 +347,7 @@ function App() {
                       <kbd>{modKey}O</kbd>
                       <span>Open</span>
                     </button>
-                    <button type="button" className="empty-action" onClick={() => setShowPalette(true)}>
+                    <button type="button" className="empty-action" onClick={() => { setPaletteKey((k) => k + 1); setShowPalette(true); }}>
                       <kbd>{modKey}K</kbd>
                       <span>Command Palette</span>
                     </button>
@@ -361,7 +367,7 @@ function App() {
                   style={{ display: 'flex', flexShrink: 0, overflow: 'hidden' }}
                 >
                   <Suspense>
-                    <div className="resize-handle resize-handle-h" onMouseDown={diffPanel.onMouseDown} />
+                    <div className="resize-handle resize-handle-h" onMouseDown={diffPanel.onMouseDown} onKeyDown={diffPanel.onKeyDown} {...diffPanel.ariaProps} />
                     <DiffView diff={diff} visible={showDiff} style={{ width: diffPanel.size }} />
                   </Suspense>
                 </motion.div>
@@ -380,7 +386,7 @@ function App() {
                 style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden' }}
               >
                 <Suspense>
-                  <div className="resize-handle resize-handle-v" onMouseDown={gitLog.onMouseDown} />
+                  <div className="resize-handle resize-handle-v" onMouseDown={gitLog.onMouseDown} onKeyDown={gitLog.onKeyDown} {...gitLog.ariaProps} />
                   <GitLog
                     repoPath={repoPath}
                     filePath={filePath}
@@ -390,12 +396,13 @@ function App() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </main>
       </div>
 
       <AnimatePresence>
         {showPalette && (
           <CommandPalette
+            key={paletteKey}
             commands={paletteCommands}
             files={mdFiles}
             repoPath={folderPath}

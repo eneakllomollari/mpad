@@ -13,6 +13,8 @@ interface Props {
 }
 
 const MAX_RESULTS = 50;
+const LISTBOX_ID = 'palette-listbox';
+const itemId = (item: { type: string; id: string }) => `palette-opt-${item.type}-${item.id}`;
 
 export const CommandPalette = memo(function CommandPalette({ commands, files, repoPath, onFileSelect, onClose }: Props) {
   const [query, setQuery] = useState('');
@@ -20,6 +22,7 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const paletteRef = useRef<HTMLDivElement>(null);
   const [, startTransition] = useTransition();
 
   const results = useMemo(
@@ -28,6 +31,7 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
   );
 
   const clamped = Math.min(selectedIndex, Math.max(results.length - 1, 0));
+  const activeDescendant = results[clamped] ? itemId(results[clamped]) : undefined;
 
   const handleQueryChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -36,21 +40,24 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
     startTransition(() => setDeferredQuery(value));
   }, []);
 
-  // Auto-focus
+  // Auto-focus + trap focus within dialog
   useEffect(() => {
     requestAnimationFrame(() => inputRef.current?.focus());
   }, []);
 
-  // Document-level Escape listener so palette closes even when focus is outside
+  // Document-level: Escape closes palette even when blurred; Tab trapped to input
   useEffect(() => {
-    const handleGlobalEscape = (e: KeyboardEvent) => {
+    const handleGlobalKeydown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+      } else if (e.key === 'Tab' && paletteRef.current) {
+        e.preventDefault();
+        inputRef.current?.focus();
       }
     };
-    document.addEventListener('keydown', handleGlobalEscape);
-    return () => document.removeEventListener('keydown', handleGlobalEscape);
+    document.addEventListener('keydown', handleGlobalKeydown);
+    return () => document.removeEventListener('keydown', handleGlobalKeydown);
   }, [onClose]);
 
   // Scroll selected into view
@@ -107,7 +114,11 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
       transition={{ duration: 0.1 }}
     >
       <motion.div
+        ref={paletteRef}
         className="palette"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
         onMouseDown={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
         initial={{ opacity: 0, scale: 0.98, y: -10 }}
@@ -124,14 +135,22 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
           className="palette-input"
           spellCheck={false}
           autoComplete="off"
+          role="combobox"
+          aria-expanded={results.length > 0}
+          aria-controls={LISTBOX_ID}
+          aria-activedescendant={activeDescendant}
+          aria-autocomplete="list"
         />
-        <div ref={listRef} className="palette-list">
+        <div ref={listRef} id={LISTBOX_ID} role="listbox" className="palette-list" aria-label="Results">
           {query.trim() && results.length === 0 && (
-            <div className="palette-empty">No results</div>
+            <div className="palette-empty" role="status">No results</div>
           )}
           {results.map((item, i) => (
             <div
               key={`${item.type}-${item.id}`}
+              id={itemId(item)}
+              role="option"
+              aria-selected={i === clamped}
               className={`palette-item ${i === clamped ? 'selected' : ''}`}
               onMouseDown={(e) => { e.preventDefault(); execute(item); }}
               onMouseEnter={() => setSelectedIndex(i)}

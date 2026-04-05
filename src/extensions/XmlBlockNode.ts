@@ -76,10 +76,14 @@ export const XmlBlockNode = Node.create({
       const colorClass = getColorClass(node.attrs.tagName);
       dom.className = `xml-block ${colorClass}`;
       dom.setAttribute('data-type', 'xmlBlock');
+      dom.setAttribute('role', 'button');
+      dom.setAttribute('tabindex', '0');
+      dom.setAttribute('aria-label', `${node.attrs.tagName} block`);
 
       let expanded = false;
 
       const render = () => {
+        dom.setAttribute('aria-expanded', String(expanded));
         dom.innerHTML = '';
 
         const header = document.createElement('div');
@@ -97,9 +101,17 @@ export const XmlBlockNode = Node.create({
         }
       };
 
-      dom.addEventListener('click', () => {
+      const toggle = () => {
         expanded = !expanded;
         render();
+      };
+
+      dom.addEventListener('click', toggle);
+      dom.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+        }
       });
 
       render();

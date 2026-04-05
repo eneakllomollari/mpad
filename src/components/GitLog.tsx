@@ -29,23 +29,25 @@ export function GitLog({ repoPath, filePath, style }: GitLogProps) {
   }, [repoPath, filePath]);
 
   return (
-    <div className="git-log-panel" style={style}>
-      <div className="git-log-header">Commits</div>
+    <section className="git-log-panel" style={style} aria-label="Git log">
+      <h2 className="git-log-header">Commits</h2>
       {commits.length === 0 ? (
         <div style={{ padding: '0.5em 1em', color: 'var(--text-muted)' }}>
           No commits found
         </div>
       ) : (
-        commits.map((commit) => (
-          <div key={commit.hash} className="git-log-entry">
-            <span className="git-log-hash">{commit.hash.slice(0, 7)}</span>
-            <span className="git-log-message">{commit.message}</span>
-            <span className="git-log-meta">
-              {commit.author} &middot; {commit.date}
-            </span>
-          </div>
-        ))
+        <ul role="list" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {commits.map((commit) => (
+            <li key={commit.hash} className="git-log-entry">
+              <span className="git-log-hash">{commit.hash.slice(0, 7)}</span>
+              <span className="git-log-message">{commit.message}</span>
+              <span className="git-log-meta">
+                {commit.author} &middot; {commit.date}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
-    </div>
+    </section>
   );
 }

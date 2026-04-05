@@ -37,10 +37,14 @@ export const FrontmatterNode = Node.create({
       const dom = document.createElement('div');
       dom.classList.add('frontmatter-block');
       dom.setAttribute('data-type', 'frontmatter');
+      dom.setAttribute('role', 'button');
+      dom.setAttribute('tabindex', '0');
+      dom.setAttribute('aria-label', 'Frontmatter block');
 
       let expanded = false;
 
       const render = () => {
+        dom.setAttribute('aria-expanded', String(expanded));
         if (expanded) {
           dom.innerHTML = '';
           const content = document.createElement('div');
@@ -56,9 +60,17 @@ export const FrontmatterNode = Node.create({
         }
       };
 
-      dom.addEventListener('click', () => {
+      const toggle = () => {
         expanded = !expanded;
         render();
+      };
+
+      dom.addEventListener('click', toggle);
+      dom.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+        }
       });
 
       render();
