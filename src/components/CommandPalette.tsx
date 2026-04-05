@@ -41,6 +41,18 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
     requestAnimationFrame(() => inputRef.current?.focus());
   }, []);
 
+  // Document-level Escape listener so palette closes even when focus is outside
+  useEffect(() => {
+    const handleGlobalEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleGlobalEscape);
+    return () => document.removeEventListener('keydown', handleGlobalEscape);
+  }, [onClose]);
+
   // Scroll selected into view
   useEffect(() => {
     const item = listRef.current?.children[clamped] as HTMLElement | undefined;

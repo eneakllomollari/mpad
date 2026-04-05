@@ -105,6 +105,7 @@ function App() {
   const loadFileRef = useRef(loadFile);
   useEffect(() => { loadFileRef.current = loadFile; });
   useEffect(() => {
+    if (!window.__TAURI_INTERNALS__) return;
     const unlisten = listen<string>('open-file', (event) => {
       loadFileRef.current(event.payload);
     });
