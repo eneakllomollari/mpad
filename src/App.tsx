@@ -113,11 +113,21 @@ function App() {
   }, []);
 
   // On mount, determine the initial file to open:
-  // 1. Check URL query params (used by multi-window / second instance)
-  // 2. Ask the backend for the CLI arg (avoids race condition of emitting events in setup())
+  // 1. Dev-only: if Tauri is absent and ?file=demo, mount editor with sample content
+  // 2. Check URL query params (used by multi-window / second instance)
+  // 3. Ask the backend for the CLI arg (avoids race condition of emitting events in setup())
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlFile = params.get('file');
+
+    if (!window.__TAURI_INTERNALS__ && urlFile === 'demo') {
+      Promise.resolve().then(() => {
+        setContent('# Welcome to mpad\n\nThis is a **demo** document for browser testing.\n\n- Item one\n- Item two\n- Item three\n\n> A blockquote for testing.\n\n```js\nconsole.log("hello");\n```\n');
+        setFilePath('/demo.md');
+      });
+      return;
+    }
+
     if (urlFile) {
       loadFileRef.current(urlFile);
       return;
