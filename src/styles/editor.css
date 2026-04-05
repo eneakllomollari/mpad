@@ -28,14 +28,23 @@ body {
 
 /* ── Scrollbar ─────────────────────────────────────── */
 
-/* Hide scrollbar by default, show on hover or focus-within */
+/* Hide scrollbar by default, show on hover or when focused */
 * {
   scrollbar-width: none; /* Firefox */
 }
 
-*:hover,
-*:focus-within {
+*:hover {
   scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--border-color) transparent;
+}
+
+/* Show scrollbars on scrollable panels when they contain focused elements */
+.sidebar:focus-within,
+.diff-panel:focus-within,
+.git-log-panel:focus-within,
+.palette-list:focus-within,
+.editor-container:focus-within {
+  scrollbar-width: thin;
   scrollbar-color: var(--border-color) transparent;
 }
 
@@ -47,9 +56,16 @@ body {
   display: none; /* Hide by default */
 }
 
-*:hover::-webkit-scrollbar,
-*:focus-within::-webkit-scrollbar {
-  display: block; /* Show on hover or focus-within */
+*:hover::-webkit-scrollbar {
+  display: block; /* Show on hover */
+}
+
+.sidebar:focus-within::-webkit-scrollbar,
+.diff-panel:focus-within::-webkit-scrollbar,
+.git-log-panel:focus-within::-webkit-scrollbar,
+.palette-list:focus-within::-webkit-scrollbar,
+.editor-container:focus-within::-webkit-scrollbar {
+  display: block;
 }
 
 ::-webkit-scrollbar-track {
@@ -502,6 +518,8 @@ body {
   cursor: pointer;
   padding: 0.15em 0.5em;
   border-radius: var(--radius-sm);
+  background: none;
+  border: none;
   transition: background 150ms var(--ease-spring), color 150ms var(--ease-spring);
 }
 
@@ -1405,6 +1423,7 @@ body {
   margin: -1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
   white-space: nowrap;
   border-width: 0;
 }

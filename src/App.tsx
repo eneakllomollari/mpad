@@ -37,6 +37,7 @@ function App() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showGitLog, setShowGitLog] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
+  const [paletteKey, setPaletteKey] = useState(0);
   const [diff, setDiff] = useState('');
   const [showFind, setShowFind] = useState(false);
   const [findRequestToken, setFindRequestToken] = useState(0);
@@ -270,7 +271,12 @@ function App() {
       onToggleDiff: handleToggleDiff,
       onToggleSidebar: () => setShowSidebar((v) => !v),
       onToggleGitLog: () => setShowGitLog((v) => !v),
-      onToggleCheatsheet: () => setShowPalette((v) => !v),
+      onToggleCheatsheet: () => {
+        setShowPalette((v) => {
+          if (!v) setPaletteKey((k) => k + 1);
+          return !v;
+        });
+      },
       onFind: openFind,
       onZoomIn: handleZoomIn,
       onZoomOut: handleZoomOut,
@@ -330,7 +336,7 @@ function App() {
                       <kbd>{modKey}O</kbd>
                       <span>Open</span>
                     </button>
-                    <button type="button" className="empty-action" onClick={() => setShowPalette(true)}>
+                    <button type="button" className="empty-action" onClick={() => { setPaletteKey((k) => k + 1); setShowPalette(true); }}>
                       <kbd>{modKey}K</kbd>
                       <span>Command Palette</span>
                     </button>
@@ -385,6 +391,7 @@ function App() {
       <AnimatePresence>
         {showPalette && (
           <CommandPalette
+            key={paletteKey}
             commands={paletteCommands}
             files={mdFiles}
             repoPath={folderPath}
