@@ -16,7 +16,6 @@ jobs:
       contents: read
       pull-requests: write
     env:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       EXPECT_BASE_URL: ${{ vars.EXPECT_BASE_URL || 'http://localhost:5173' }}
     steps:
       - uses: actions/checkout@v4
@@ -47,8 +46,9 @@ jobs:
 
       - name: Run expect
         env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx expect-cli@latest --ci
+        run: npx expect-cli@0.0.26 --ci
 
       - name: Upload test artifacts
         if: always()

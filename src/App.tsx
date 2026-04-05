@@ -283,10 +283,8 @@ function App() {
       onToggleSidebar: () => setShowSidebar((v) => !v),
       onToggleGitLog: () => setShowGitLog((v) => !v),
       onToggleCheatsheet: () => {
-        setShowPalette((v) => {
-          if (!v) setPaletteKey((k) => k + 1);
-          return !v;
-        });
+        setPaletteKey((k) => k + 1);
+        setShowPalette((v) => !v);
       },
       onFind: openFind,
       onZoomIn: handleZoomIn,

@@ -114,12 +114,14 @@ function TreeItem({
   currentFile,
   rootPath,
   onFileSelect,
+  firstFilePath,
 }: {
   node: TreeNode;
   depth: number;
   currentFile: string | null;
   rootPath: string;
   onFileSelect: (path: string) => void;
+  firstFilePath: string | null;
 }) {
   const [expanded, setExpanded] = useState(() => {
     if (depth < 1) return true;
@@ -160,6 +162,7 @@ function TreeItem({
                 currentFile={currentFile}
                 rootPath={rootPath}
                 onFileSelect={onFileSelect}
+                firstFilePath={firstFilePath}
               />
             ))}
           </div>
@@ -171,6 +174,7 @@ function TreeItem({
   const base = rootPath.endsWith('/') ? rootPath : `${rootPath}/`;
   const absolutePath = `${base}${node.fullPath}`;
   const isActive = currentFile === absolutePath;
+  const isFirstFallback = !currentFile && absolutePath === firstFilePath;
   const dotColor = statusColor(node.status);
   const gitLabel = statusLabel(node.status);
 
@@ -179,7 +183,7 @@ function TreeItem({
       className={`tree-item ${isActive ? 'active' : ''}`}
       style={{ paddingLeft }}
       role="treeitem"
-      tabIndex={isActive ? 0 : -1}
+      tabIndex={isActive || isFirstFallback ? 0 : -1}
       aria-current={isActive ? 'page' : undefined}
       aria-label={gitLabel ? `${node.name} (${gitLabel})` : node.name}
       onClick={() => onFileSelect(absolutePath)}
@@ -243,6 +247,21 @@ export function Sidebar({
 
   const tree = useMemo(() => buildTree(mdFiles, gitStatusMap), [mdFiles, gitStatusMap]);
 
+  const firstFilePath = useMemo(() => {
+    const findFirst = (nodes: TreeNode[]): string | null => {
+      for (const n of nodes) {
+        if (!n.isDir) {
+          const base = (folderPath ?? '').endsWith('/') ? folderPath ?? '' : `${folderPath ?? ''}/`;
+          return `${base}${n.fullPath}`;
+        }
+        const found = findFirst(n.children);
+        if (found) return found;
+      }
+      return null;
+    };
+    return findFirst(tree);
+  }, [tree, folderPath]);
+
   if (!visible) return null;
 
   return (
@@ -263,6 +282,7 @@ export function Sidebar({
               currentFile={currentFile}
               rootPath={folderPath ?? ''}
               onFileSelect={onFileSelect}
+              firstFilePath={firstFilePath}
             />
           ))}
       </div>
