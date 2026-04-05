@@ -96,8 +96,10 @@ export function FindBar({ editor, visible, activationToken, onClose }: FindBarPr
   const total = s?.totalMatches ?? 0;
   const current = total > 0 ? (s?.activeIndex ?? 0) + 1 : 0;
 
+  const countText = query ? `${current} of ${total}` : '';
+
   return (
-    <div ref={barRef} className="find-bar">
+    <div ref={barRef} className="find-bar" role="search" aria-label="Find in document">
       <input
         ref={inputRef}
         type="text"
@@ -107,16 +109,17 @@ export function FindBar({ editor, visible, activationToken, onClose }: FindBarPr
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         spellCheck={false}
+        aria-label="Search text"
       />
-      <span className="find-bar-count">
-        {query ? `${current}/${total}` : ''}
+      <span className="find-bar-count" role="status" aria-live="polite" aria-atomic="true">
+        {countText}
       </span>
       <button
         type="button"
         className="find-bar-btn"
         onClick={() => navigate(-1)}
         disabled={total === 0}
-        title="Previous (Shift+Enter)"
+        aria-label="Previous match (Shift+Enter)"
       >
         ▲
       </button>
@@ -125,7 +128,7 @@ export function FindBar({ editor, visible, activationToken, onClose }: FindBarPr
         className="find-bar-btn"
         onClick={() => navigate(1)}
         disabled={total === 0}
-        title="Next (Enter)"
+        aria-label="Next match (Enter)"
       >
         ▼
       </button>
@@ -133,7 +136,7 @@ export function FindBar({ editor, visible, activationToken, onClose }: FindBarPr
         type="button"
         className="find-bar-btn"
         onClick={handleClose}
-        title="Close (Esc)"
+        aria-label="Close find bar (Escape)"
       >
         ✕
       </button>

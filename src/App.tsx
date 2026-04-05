@@ -304,13 +304,13 @@ function App() {
                   visible={showSidebar}
                   style={{ width: sidebar.size }}
                 />
-                <div className="resize-handle resize-handle-h" onMouseDown={sidebar.onMouseDown} />
+                <div className="resize-handle resize-handle-h" onMouseDown={sidebar.onMouseDown} onKeyDown={sidebar.onKeyDown} {...sidebar.ariaProps} />
               </Suspense>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="app-main">
+        <main className="app-main">
           <div className="editor-area">
             <div className="editor-container">
               {filePath ? (
@@ -350,7 +350,7 @@ function App() {
                   style={{ display: 'flex', flexShrink: 0, overflow: 'hidden' }}
                 >
                   <Suspense>
-                    <div className="resize-handle resize-handle-h" onMouseDown={diffPanel.onMouseDown} />
+                    <div className="resize-handle resize-handle-h" onMouseDown={diffPanel.onMouseDown} onKeyDown={diffPanel.onKeyDown} {...diffPanel.ariaProps} />
                     <DiffView diff={diff} visible={showDiff} style={{ width: diffPanel.size }} />
                   </Suspense>
                 </motion.div>
@@ -369,7 +369,7 @@ function App() {
                 style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden' }}
               >
                 <Suspense>
-                  <div className="resize-handle resize-handle-v" onMouseDown={gitLog.onMouseDown} />
+                  <div className="resize-handle resize-handle-v" onMouseDown={gitLog.onMouseDown} onKeyDown={gitLog.onKeyDown} {...gitLog.ariaProps} />
                   <GitLog
                     repoPath={repoPath}
                     filePath={filePath}
@@ -379,7 +379,7 @@ function App() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </main>
       </div>
 
       <AnimatePresence>

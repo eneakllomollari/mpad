@@ -11,6 +11,8 @@ interface UseResizableOptions {
   side?: 'left' | 'right' | 'top' | 'bottom';
 }
 
+const KEYBOARD_STEP = 20;
+
 export function useResizable({
   direction,
   initialSize,
@@ -33,6 +35,27 @@ export function useResizable({
       document.body.style.userSelect = 'none';
     },
     [direction, size],
+  );
+
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const invert = side === 'right' || side === 'bottom';
+      let delta = 0;
+
+      if (direction === 'horizontal') {
+        if (e.key === 'ArrowLeft') delta = -KEYBOARD_STEP;
+        else if (e.key === 'ArrowRight') delta = KEYBOARD_STEP;
+      } else {
+        if (e.key === 'ArrowUp') delta = -KEYBOARD_STEP;
+        else if (e.key === 'ArrowDown') delta = KEYBOARD_STEP;
+      }
+
+      if (delta === 0) return;
+      e.preventDefault();
+      const adjusted = invert ? -delta : delta;
+      setSize((s) => Math.max(minSize, Math.min(maxSize, s + adjusted)));
+    },
+    [direction, minSize, maxSize, side],
   );
 
   useEffect(() => {
@@ -60,5 +83,15 @@ export function useResizable({
     };
   }, [direction, minSize, maxSize, side]);
 
-  return { size, onMouseDown };
+  const ariaProps = {
+    role: 'separator' as const,
+    'aria-orientation': (direction === 'horizontal' ? 'vertical' : 'horizontal') as 'vertical' | 'horizontal',
+    'aria-valuenow': size,
+    'aria-valuemin': minSize,
+    'aria-valuemax': maxSize,
+    'aria-label': `Resize ${direction === 'horizontal' ? 'panel width' : 'panel height'}`,
+    tabIndex: 0,
+  };
+
+  return { size, onMouseDown, onKeyDown, ariaProps };
 }

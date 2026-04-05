@@ -13,6 +13,8 @@ interface Props {
 }
 
 const MAX_RESULTS = 50;
+const LISTBOX_ID = 'palette-listbox';
+const itemId = (item: { type: string; id: string }) => `palette-opt-${item.type}-${item.id}`;
 
 export const CommandPalette = memo(function CommandPalette({ commands, files, repoPath, onFileSelect, onClose }: Props) {
   const [query, setQuery] = useState('');
@@ -20,6 +22,7 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const paletteRef = useRef<HTMLDivElement>(null);
   const [, startTransition] = useTransition();
 
   const results = useMemo(
@@ -28,6 +31,7 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
   );
 
   const clamped = Math.min(selectedIndex, Math.max(results.length - 1, 0));
+  const activeDescendant = results[clamped] ? itemId(results[clamped]) : undefined;
 
   const handleQueryChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -36,9 +40,20 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
     startTransition(() => setDeferredQuery(value));
   }, []);
 
-  // Auto-focus
+  // Auto-focus + trap focus within dialog
   useEffect(() => {
     requestAnimationFrame(() => inputRef.current?.focus());
+  }, []);
+
+  // Focus trap: keep Tab within the palette
+  useEffect(() => {
+    const handleFocusTrap = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !paletteRef.current) return;
+      e.preventDefault();
+      inputRef.current?.focus();
+    };
+    window.addEventListener('keydown', handleFocusTrap);
+    return () => window.removeEventListener('keydown', handleFocusTrap);
   }, []);
 
   // Scroll selected into view
@@ -95,7 +110,11 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
       transition={{ duration: 0.1 }}
     >
       <motion.div
+        ref={paletteRef}
         className="palette"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
         onMouseDown={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
         initial={{ opacity: 0, scale: 0.98, y: -10 }}
@@ -112,14 +131,22 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
           className="palette-input"
           spellCheck={false}
           autoComplete="off"
+          role="combobox"
+          aria-expanded={results.length > 0}
+          aria-controls={LISTBOX_ID}
+          aria-activedescendant={activeDescendant}
+          aria-autocomplete="list"
         />
-        <div ref={listRef} className="palette-list">
+        <div ref={listRef} id={LISTBOX_ID} role="listbox" className="palette-list" aria-label="Results">
           {query.trim() && results.length === 0 && (
-            <div className="palette-empty">No results</div>
+            <div className="palette-empty" role="status">No results</div>
           )}
           {results.map((item, i) => (
             <div
               key={`${item.type}-${item.id}`}
+              id={itemId(item)}
+              role="option"
+              aria-selected={i === clamped}
               className={`palette-item ${i === clamped ? 'selected' : ''}`}
               onMouseDown={(e) => { e.preventDefault(); execute(item); }}
               onMouseEnter={() => setSelectedIndex(i)}
