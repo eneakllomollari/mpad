@@ -47,14 +47,18 @@ if [ -d "/usr/local/bin" ]; then
     curl -fsSL "https://raw.githubusercontent.com/$REPO/main/scripts/mpad" -o "$CLI_SCRIPT"
     chmod +x "$CLI_SCRIPT"
     cp -f "$CLI_SCRIPT" "$CLI_TARGET"
+    CLI_INSTALLED=true
 else
     echo "Warning: /usr/local/bin not found. CLI wrapper not installed."
+    CLI_INSTALLED=false
 fi
 
 # Cleanup
 rm -rf "$TMP_DIR"
 
 echo "✓ mpad installed to $INSTALL_DIR/$APP_NAME.app"
-echo "✓ CLI wrapper installed to $CLI_TARGET"
-echo ""
-echo "Run 'mpad help' for usage, 'mpad update' to update."
+if [ "$CLI_INSTALLED" = true ]; then
+    echo "✓ CLI wrapper installed to $CLI_TARGET"
+    echo ""
+    echo "Run 'mpad help' for usage, 'mpad update' to update."
+fi
