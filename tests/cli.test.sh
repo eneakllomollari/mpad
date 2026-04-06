@@ -56,6 +56,7 @@ assert_contains "shows usage header" "Markdown editor" "$out"
 assert_contains "shows update command" "mpad update" "$out"
 assert_contains "shows version command" "mpad version" "$out"
 assert_contains "shows file usage" "mpad \[file.md\]" "$out"
+assert_contains "shows folder usage" "mpad \[folder\]" "$out"
 
 # --help flag
 echo ""

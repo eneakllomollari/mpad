@@ -92,6 +92,23 @@ function App() {
     [readFile],
   );
 
+  // Open a path — handles both files and directories from CLI, URL, or dialog
+  const openPath = useCallback(
+    async (path: string) => {
+      const isDir = await invoke<boolean>('is_directory', { path }).catch(() => false);
+      if (isDir) {
+        setFolderPath(path);
+        setShowSidebar(true);
+        invoke<string | null>('git_find_repo', { path })
+          .then(setRepoPath)
+          .catch(() => setRepoPath(null));
+      } else {
+        loadFile(path);
+      }
+    },
+    [loadFile],
+  );
+
   // Fetch markdown files when folder changes (cached for palette)
   useEffect(() => {
     if (!folderPath) return;
@@ -103,12 +120,12 @@ function App() {
   }, [folderPath]);
 
   // Listen for open-file events from Rust backend (used for multi-window / second instance)
-  const loadFileRef = useRef(loadFile);
-  useEffect(() => { loadFileRef.current = loadFile; });
+  const openPathRef = useRef(openPath);
+  useEffect(() => { openPathRef.current = openPath; });
   useEffect(() => {
     if (!window.__TAURI_INTERNALS__) return;
     const unlisten = listen<string>('open-file', (event) => {
-      loadFileRef.current(event.payload);
+      openPathRef.current(event.payload);
     });
     return () => { unlisten.then((fn) => fn()); };
   }, []);
@@ -130,14 +147,14 @@ function App() {
     }
 
     if (urlFile) {
-      loadFileRef.current(urlFile);
+      openPathRef.current(urlFile);
       return;
     }
 
     invoke<string | null>('get_initial_file')
       .then((path) => {
         if (path) {
-          loadFileRef.current(path);
+          openPathRef.current(path);
         }
       })
       .catch(() => {
@@ -204,22 +221,11 @@ function App() {
         ],
       });
       if (!selected || typeof selected !== 'string') return;
-
-      const isDir = await invoke<boolean>('is_directory', { path: selected }).catch(() => false);
-
-      if (isDir) {
-        setFolderPath(selected);
-        setShowSidebar(true);
-        invoke<string | null>('git_find_repo', { path: selected })
-          .then(setRepoPath)
-          .catch(() => setRepoPath(null));
-      } else {
-        loadFile(selected);
-      }
+      openPath(selected);
     } catch {
       // Dialog cancelled or unavailable
     }
-  }, [loadFile]);
+  }, [openPath]);
 
   // Toggle diff
   const handleToggleDiff = useCallback(async () => {

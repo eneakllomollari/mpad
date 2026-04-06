@@ -13,7 +13,9 @@ show_help() {
 mpad — Markdown editor
 
 Usage:
-  mpad [file.md]     Open a file (or launch empty editor)
+  mpad [file.md]     Open a markdown file
+  mpad [folder]      Open a folder (shows sidebar)
+  mpad               Launch empty editor
   mpad update        Update to the latest release
   mpad version       Show installed version
   mpad help          Show this help message
