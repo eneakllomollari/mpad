@@ -1,3 +1,7 @@
 {
-  "startup": "entire enable"
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "install": "entire enable"
 }
