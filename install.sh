@@ -43,7 +43,10 @@ fi
 CLI_TARGET="/usr/local/bin/$APP_NAME"
 if [ -d "/usr/local/bin" ]; then
     echo "Installing CLI wrapper to $CLI_TARGET..."
-    ln -sf "$INSTALL_DIR/$APP_NAME.app/Contents/MacOS/$APP_NAME" "$CLI_TARGET"
+    CLI_SCRIPT="$TMP_DIR/mpad-cli"
+    curl -fsSL "https://raw.githubusercontent.com/$REPO/main/scripts/mpad" -o "$CLI_SCRIPT"
+    chmod +x "$CLI_SCRIPT"
+    cp -f "$CLI_SCRIPT" "$CLI_TARGET"
 else
     echo "Warning: /usr/local/bin not found. CLI wrapper not installed."
 fi
@@ -53,3 +56,5 @@ rm -rf "$TMP_DIR"
 
 echo "✓ mpad installed to $INSTALL_DIR/$APP_NAME.app"
 echo "✓ CLI wrapper installed to $CLI_TARGET"
+echo ""
+echo "Run 'mpad help' for usage, 'mpad update' to update."
