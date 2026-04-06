@@ -197,11 +197,15 @@ function SlashMenu({ editor, onClose }: { editor: ReturnType<typeof useEditor>; 
       ref={menuRef}
       className="slash-menu"
       style={{ top: pos.top, left: pos.left }}
+      role="listbox"
+      aria-label="Insert block"
     >
-      {query && <div className="slash-menu-query">/{query}</div>}
+      {query && <div className="slash-menu-query" aria-live="polite">/{query}</div>}
       {filtered.map((item, i) => (
         <div
           key={item.label}
+          role="option"
+          aria-selected={i === clampedSelected}
           className={`slash-menu-item ${i === clampedSelected ? 'selected' : ''}`}
           onMouseDown={(e) => {
             e.preventDefault();
@@ -219,12 +223,12 @@ function SlashMenu({ editor, onClose }: { editor: ReturnType<typeof useEditor>; 
 }
 
 // --- Bubble menu button config ---
-const bubbleItems: { mark: string; label: React.ReactNode; command: string }[] = [
-  { mark: 'bold', label: <strong>B</strong>, command: 'toggleBold' },
-  { mark: 'italic', label: <em>I</em>, command: 'toggleItalic' },
-  { mark: 'strike', label: <s>S</s>, command: 'toggleStrike' },
-  { mark: 'code', label: <code>&lt;/&gt;</code>, command: 'toggleCode' },
-  { mark: 'highlight', label: 'H', command: 'toggleHighlight' },
+const bubbleItems: { mark: string; label: React.ReactNode; command: string; ariaLabel: string }[] = [
+  { mark: 'bold', label: <strong>B</strong>, command: 'toggleBold', ariaLabel: 'Bold' },
+  { mark: 'italic', label: <em>I</em>, command: 'toggleItalic', ariaLabel: 'Italic' },
+  { mark: 'strike', label: <s>S</s>, command: 'toggleStrike', ariaLabel: 'Strikethrough' },
+  { mark: 'code', label: <code>&lt;/&gt;</code>, command: 'toggleCode', ariaLabel: 'Inline code' },
+  { mark: 'highlight', label: 'H', command: 'toggleHighlight', ariaLabel: 'Highlight' },
 ];
 
 export function Editor({
@@ -414,6 +418,7 @@ export function Editor({
         value={content}
         onChange={handleSourceChange}
         spellCheck={false}
+        aria-label="Markdown source editor"
       />
     );
   }
@@ -422,11 +427,13 @@ export function Editor({
     <div style={{ position: 'relative' }}>
       {editor && (
         <BubbleMenu editor={editor}>
-          <div className="bubble-menu">
-            {bubbleItems.map(({ mark, label, command }) => (
+          <div className="bubble-menu" role="toolbar" aria-label="Text formatting">
+            {bubbleItems.map(({ mark, label, command, ariaLabel }) => (
               <button
                 key={mark}
                 type="button"
+                aria-label={ariaLabel}
+                aria-pressed={editor.isActive(mark)}
                 className={editor.isActive(mark) ? 'active' : ''}
                 onMouseDown={(e) => {
                   e.preventDefault();
@@ -439,6 +446,8 @@ export function Editor({
             ))}
             <button
               type="button"
+              aria-label="Insert link"
+              aria-pressed={editor.isActive('link')}
               className={editor.isActive('link') ? 'active' : ''}
               onMouseDown={(e) => {
                 e.preventDefault();

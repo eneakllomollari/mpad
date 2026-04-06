@@ -116,9 +116,11 @@ export const MermaidNode = Node.create({
         label.className = 'mermaid-label';
         label.textContent = 'mermaid';
 
-        const toggle = document.createElement('span');
+        const toggle = document.createElement('button');
         toggle.className = 'mermaid-toggle';
+        toggle.type = 'button';
         toggle.textContent = showSource ? 'diagram' : 'source';
+        toggle.setAttribute('aria-label', showSource ? 'Show diagram' : 'Show source code');
         toggle.addEventListener('click', (e) => {
           e.stopPropagation();
           showSource = !showSource;
@@ -139,6 +141,8 @@ export const MermaidNode = Node.create({
         } else {
           const container = document.createElement('div');
           container.className = 'mermaid-diagram';
+          container.setAttribute('role', 'img');
+          container.setAttribute('aria-label', 'Mermaid diagram');
           try {
             const id = `mermaid-${node.attrs.index}-${Date.now()}`;
             const { svg } = await mermaid.render(id, node.attrs.code);
@@ -146,6 +150,8 @@ export const MermaidNode = Node.create({
           } catch {
             container.classList.add('mermaid-error');
             container.textContent = 'Failed to render diagram';
+            container.removeAttribute('role');
+            container.setAttribute('role', 'alert');
           }
           dom.appendChild(container);
         }

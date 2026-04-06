@@ -28,13 +28,23 @@ body {
 
 /* ── Scrollbar ─────────────────────────────────────── */
 
-/* Hide scrollbar by default, show on hover */
+/* Hide scrollbar by default, show on hover or when focused */
 * {
   scrollbar-width: none; /* Firefox */
 }
 
 *:hover {
   scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--border-color) transparent;
+}
+
+/* Show scrollbars on scrollable panels when they contain focused elements */
+.sidebar:focus-within,
+.diff-panel:focus-within,
+.git-log-panel:focus-within,
+.palette-list:focus-within,
+.editor-container:focus-within {
+  scrollbar-width: thin;
   scrollbar-color: var(--border-color) transparent;
 }
 
@@ -48,6 +58,14 @@ body {
 
 *:hover::-webkit-scrollbar {
   display: block; /* Show on hover */
+}
+
+.sidebar:focus-within::-webkit-scrollbar,
+.diff-panel:focus-within::-webkit-scrollbar,
+.git-log-panel:focus-within::-webkit-scrollbar,
+.palette-list:focus-within::-webkit-scrollbar,
+.editor-container:focus-within::-webkit-scrollbar {
+  display: block;
 }
 
 ::-webkit-scrollbar-track {
@@ -500,6 +518,8 @@ body {
   cursor: pointer;
   padding: 0.15em 0.5em;
   border-radius: var(--radius-sm);
+  background: none;
+  border: none;
   transition: background 150ms var(--ease-spring), color 150ms var(--ease-spring);
 }
 
@@ -1327,6 +1347,161 @@ body {
   color: var(--text-muted);
   font-family: var(--font-ui);
   font-size: 13px;
+}
+
+/* ── Focus Visible ────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.tiptap:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-subtle);
+}
+
+.source-editor:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-subtle);
+}
+
+.palette-input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.find-bar-input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.tree-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: var(--bg-hover);
+}
+
+.bubble-menu button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.find-bar-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.empty-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.resize-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  background: var(--accent-subtle);
+}
+
+.slash-menu-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.git-log-entry:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* ── Skip Link (screen reader users) ────────────── */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ── Reduced Motion ──────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── High Contrast ───────────────────────────────── */
+
+@media (prefers-contrast: more) {
+  :root {
+    --border-color: #888;
+    --border-light: #999;
+    --text-muted: #666;
+    --bg-hover: rgba(0, 0, 0, 0.1);
+  }
+
+  [data-theme="dark"] {
+    --border-color: #888;
+    --border-light: #777;
+    --text-muted: #999;
+    --bg-hover: rgba(255, 255, 255, 0.15);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border: 1px solid currentColor;
+  }
+
+  .search-match {
+    outline: 2px solid var(--accent);
+  }
+
+  .search-match-active {
+    outline: 3px solid var(--accent);
+  }
+}
+
+/* ── Forced Colors (Windows High Contrast) ──────── */
+
+@media (forced-colors: active) {
+  .bubble-menu button.active {
+    border: 2px solid ButtonText;
+  }
+
+  .tree-item.active {
+    border-left-color: Highlight;
+    color: Highlight;
+  }
+
+  .palette-item.selected {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .status-dot {
+    forced-color-adjust: none;
+  }
+
+  .diff-line.diff-added {
+    border-left: 3px solid LinkText;
+  }
+
+  .diff-line.diff-deleted {
+    border-left: 3px solid LinkText;
+    text-decoration: line-through;
+  }
 }
 
 /* ── Entrance Animations ─────────────────────────── */

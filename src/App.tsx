@@ -37,6 +37,7 @@ function App() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showGitLog, setShowGitLog] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
+  const [paletteKey, setPaletteKey] = useState(0);
   const [diff, setDiff] = useState('');
   const [showFind, setShowFind] = useState(false);
   const [findRequestToken, setFindRequestToken] = useState(0);
@@ -105,6 +106,7 @@ function App() {
   const loadFileRef = useRef(loadFile);
   useEffect(() => { loadFileRef.current = loadFile; });
   useEffect(() => {
+    if (!window.__TAURI_INTERNALS__) return;
     const unlisten = listen<string>('open-file', (event) => {
       loadFileRef.current(event.payload);
     });
@@ -112,11 +114,21 @@ function App() {
   }, []);
 
   // On mount, determine the initial file to open:
-  // 1. Check URL query params (used by multi-window / second instance)
-  // 2. Ask the backend for the CLI arg (avoids race condition of emitting events in setup())
+  // 1. Dev-only: if Tauri is absent and ?file=demo, mount editor with sample content
+  // 2. Check URL query params (used by multi-window / second instance)
+  // 3. Ask the backend for the CLI arg (avoids race condition of emitting events in setup())
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlFile = params.get('file');
+
+    if (!window.__TAURI_INTERNALS__ && urlFile === 'demo') {
+      Promise.resolve().then(() => {
+        setContent('# Welcome to mpad\n\nThis is a **demo** document for browser testing.\n\n- Item one\n- Item two\n- Item three\n\n> A blockquote for testing.\n\n```js\nconsole.log("hello");\n```\n');
+        setFilePath('/demo.md');
+      });
+      return;
+    }
+
     if (urlFile) {
       loadFileRef.current(urlFile);
       return;
@@ -270,7 +282,10 @@ function App() {
       onToggleDiff: handleToggleDiff,
       onToggleSidebar: () => setShowSidebar((v) => !v),
       onToggleGitLog: () => setShowGitLog((v) => !v),
-      onToggleCheatsheet: () => setShowPalette((v) => !v),
+      onToggleCheatsheet: () => {
+        setPaletteKey((k) => k + 1);
+        setShowPalette((v) => !v);
+      },
       onFind: openFind,
       onZoomIn: handleZoomIn,
       onZoomOut: handleZoomOut,
@@ -304,13 +319,13 @@ function App() {
                   visible={showSidebar}
                   style={{ width: sidebar.size }}
                 />
-                <div className="resize-handle resize-handle-h" onMouseDown={sidebar.onMouseDown} />
+                <div className="resize-handle resize-handle-h" onMouseDown={sidebar.onMouseDown} onKeyDown={sidebar.onKeyDown} {...sidebar.ariaProps} />
               </Suspense>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="app-main">
+        <main className="app-main">
           <div className="editor-area">
             <div className="editor-container">
               {filePath ? (
@@ -330,7 +345,7 @@ function App() {
                       <kbd>{modKey}O</kbd>
                       <span>Open</span>
                     </button>
-                    <button type="button" className="empty-action" onClick={() => setShowPalette(true)}>
+                    <button type="button" className="empty-action" onClick={() => { setPaletteKey((k) => k + 1); setShowPalette(true); }}>
                       <kbd>{modKey}K</kbd>
                       <span>Command Palette</span>
                     </button>
@@ -350,7 +365,7 @@ function App() {
                   style={{ display: 'flex', flexShrink: 0, overflow: 'hidden' }}
                 >
                   <Suspense>
-                    <div className="resize-handle resize-handle-h" onMouseDown={diffPanel.onMouseDown} />
+                    <div className="resize-handle resize-handle-h" onMouseDown={diffPanel.onMouseDown} onKeyDown={diffPanel.onKeyDown} {...diffPanel.ariaProps} />
                     <DiffView diff={diff} visible={showDiff} style={{ width: diffPanel.size }} />
                   </Suspense>
                 </motion.div>
@@ -369,7 +384,7 @@ function App() {
                 style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden' }}
               >
                 <Suspense>
-                  <div className="resize-handle resize-handle-v" onMouseDown={gitLog.onMouseDown} />
+                  <div className="resize-handle resize-handle-v" onMouseDown={gitLog.onMouseDown} onKeyDown={gitLog.onKeyDown} {...gitLog.ariaProps} />
                   <GitLog
                     repoPath={repoPath}
                     filePath={filePath}
@@ -379,12 +394,13 @@ function App() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </main>
       </div>
 
       <AnimatePresence>
         {showPalette && (
           <CommandPalette
+            key={paletteKey}
             commands={paletteCommands}
             files={mdFiles}
             repoPath={folderPath}
