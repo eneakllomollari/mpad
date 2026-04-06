@@ -40,7 +40,3 @@ coverage/
 
 # Expect test sessions
 .expect/
-
-# Cursor IDE tooling
-.cursor/
-.entire/
