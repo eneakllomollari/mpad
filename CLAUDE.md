@@ -28,7 +28,7 @@ bunx tauri build       # Full release build
 
 `bun run check:all` is the single command that mirrors CI. If it passes locally, CI will pass. Do NOT merge if any check fails.
 
-CLI wrapper uses `open -a "$TARGET" --args "$FILE_ARG"` — must use `--args`, not positional.
+CLI wrapper uses `open -a "$TARGET" --args "$FILE_ARG"` — must use `--args`, not positional. CLI supports subcommands: `mpad update` (self-update from latest GitHub release), `mpad version`, `mpad help`.
 
 ## Architecture
 

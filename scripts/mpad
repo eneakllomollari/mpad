@@ -1,13 +1,76 @@
 #!/bin/bash
-# CLI wrapper for mpad — symlink to /usr/local/bin/mpad
-# Usage: mpad [file.md]
+# CLI wrapper for mpad — install to /usr/local/bin/mpad
+# Usage: mpad [file.md | update | version | help]
 
 set -euo pipefail
 
+REPO="eneakllomollari/mpad"
 APP_BUNDLE="/Applications/mpad.app"
 DEV_BUNDLE="$(dirname "$0")/../src-tauri/target/release/bundle/macos/mpad.app"
 
-# Resolve file argument to absolute path
+show_help() {
+  cat <<EOF
+mpad — Markdown editor
+
+Usage:
+  mpad [file.md]     Open a file (or launch empty editor)
+  mpad update        Update to the latest release
+  mpad version       Show installed version
+  mpad help          Show this help message
+
+Flags:
+  -h, --help         Show this help message
+  -v, --version      Show installed version
+EOF
+}
+
+show_version() {
+  local app=""
+  if [ -d "$APP_BUNDLE" ]; then
+    app="$APP_BUNDLE"
+  elif [ -d "$DEV_BUNDLE" ]; then
+    app="$DEV_BUNDLE"
+  fi
+
+  if [ -n "$app" ] && command -v /usr/libexec/PlistBuddy &> /dev/null; then
+    local ver
+    ver=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$app/Contents/Info.plist" 2>/dev/null || echo "unknown")
+    echo "mpad $ver"
+  elif [ -n "$app" ]; then
+    echo "mpad (version detection requires macOS)"
+  else
+    echo "mpad: not installed"
+  fi
+}
+
+do_update() {
+  echo "Updating mpad to latest release..."
+  local install_script
+  install_script=$(mktemp)
+  curl -fsSL "https://raw.githubusercontent.com/$REPO/main/install.sh" -o "$install_script"
+  bash "$install_script"
+  rm -f "$install_script"
+  echo ""
+  echo "Update complete."
+}
+
+# Subcommand dispatch
+case "${1:-}" in
+  update)
+    do_update
+    exit 0
+    ;;
+  version|-v|--version)
+    show_version
+    exit 0
+    ;;
+  help|-h|--help)
+    show_help
+    exit 0
+    ;;
+esac
+
+# Default: open file in mpad app
 FILE_ARG=""
 if [ "${1:-}" != "" ]; then
   if [[ "$1" = /* ]]; then
@@ -26,6 +89,7 @@ else
   echo "mpad: app bundle not found." >&2
   echo "  Expected at: $APP_BUNDLE" >&2
   echo "  Or build with: cd $(dirname "$0")/.. && bun tauri build" >&2
+  echo "  Or install with: mpad update" >&2
   exit 1
 fi
 
