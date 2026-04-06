@@ -17,7 +17,7 @@ Write in a clean WYSIWYG editor, keep plain `.md` files on disk, and review Git 
 ## Install (macOS)
 
 ```bash
-curl -fsSL https://entire.io/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/eneakllomollari/mpad/main/install.sh | bash
 ```
 
 This installs:
