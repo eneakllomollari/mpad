@@ -63,17 +63,27 @@ jobs:
         with:
           merge-multiple: true
 
-      - name: Create universal binary
-        run: |
-          ls -la *.zip
+      - name: Verify artifacts
+        run: ls -la *.zip
 
-      - name: Update latest release
+      - name: Delete previous latest release and tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+
+      - name: Create latest release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
+          target_commitish: ${{ github.sha }}
           name: Latest Build
           body: |
             Rolling release from `main`. Updated on every push.
+
+            **Commit:** ${{ github.sha }}
+            **Date:** ${{ github.event.head_commit.timestamp }}
 
             ## Install
 
