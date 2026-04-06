@@ -59,6 +59,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: package.json
+          sparse-checkout-cone-mode: false
+
+      - name: Read version from package.json
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
@@ -66,36 +79,62 @@ jobs:
       - name: Verify artifacts
         run: ls -la *.zip
 
-      - name: Delete previous latest release and tag
+      - name: Check if versioned release exists
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view "${{ steps.version.outputs.tag }}" &>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create versioned release
+        if: steps.check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: mpad ${{ steps.version.outputs.tag }}
+          body: |
+            ## Install
+
+            ```sh
+            curl -fsSL https://raw.githubusercontent.com/eneakllomollari/mpad/main/install.sh | bash
+            ```
+
+            Or download the zip for your architecture below.
+          files: |
+            mpad-aarch64.zip
+            mpad-x86_64.zip
+          prerelease: false
+          make_latest: false
+
+      - name: Delete previous latest release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           gh release delete latest --yes --cleanup-tag 2>/dev/null || true
 
-      - name: Create latest release
+      - name: Update latest release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           target_commitish: ${{ github.sha }}
-          name: Latest Build
+          name: Latest Build (${{ steps.version.outputs.tag }})
           body: |
-            Rolling release from `main`. Updated on every push.
+            Rolling release — always points to the newest build from `main`.
 
+            **Version:** ${{ steps.version.outputs.version }}
             **Commit:** ${{ github.sha }}
-            **Date:** ${{ github.event.head_commit.timestamp }}
 
             ## Install
 
             ```sh
-            # Apple Silicon
-            curl -fSL https://github.com/eneakllomollari/mpad/releases/download/latest/mpad-aarch64.zip -o /tmp/mpad.zip
-
-            # Intel
-            curl -fSL https://github.com/eneakllomollari/mpad/releases/download/latest/mpad-x86_64.zip -o /tmp/mpad.zip
-
-            # Then install
-            unzip -o /tmp/mpad.zip -d /Applications && xattr -cr /Applications/mpad.app
+            curl -fsSL https://raw.githubusercontent.com/eneakllomollari/mpad/main/install.sh | bash
             ```
           files: |
             mpad-aarch64.zip
