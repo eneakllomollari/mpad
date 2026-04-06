@@ -3,5 +3,5 @@
     "dockerfile": "Dockerfile",
     "context": "."
   },
-  "install": "entire enable"
+  "install": "entire enable --agent cursor --telemetry"
 }
