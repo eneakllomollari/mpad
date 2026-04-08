@@ -1259,7 +1259,7 @@ body {
 }
 
 .palette {
-  width: 480px;
+  width: 640px;
   max-width: 90vw;
   background: var(--bg-primary);
   border-radius: var(--radius-xl);
@@ -1288,7 +1288,7 @@ body {
 }
 
 .palette-list {
-  max-height: 340px;
+  max-height: 480px;
   overflow-y: auto;
   padding: 4px;
 }
