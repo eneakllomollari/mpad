@@ -2311,7 +2311,7 @@ dependencies = [
 
 [[package]]
 name = "mpad"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "git2",
  "open",
