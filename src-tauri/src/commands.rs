@@ -2,6 +2,21 @@ use crate::git::{self, CommitInfo, FileStatus, TreeEntry};
 use crate::window;
 use crate::InitialFileState;
 
+use std::path::Path;
+
+/// Validate that a file path is absolute, contains no null bytes, and resolves
+/// to a real location on disk. Returns the canonicalized path on success.
+fn validate_file_path(path: &str) -> Result<std::path::PathBuf, String> {
+    if path.contains('\0') {
+        return Err("Path contains null bytes".to_string());
+    }
+    let p = Path::new(path);
+    if !p.is_absolute() {
+        return Err(format!("Path must be absolute: {path}"));
+    }
+    std::fs::canonicalize(p).map_err(|e| format!("Invalid path {path}: {e}"))
+}
+
 /// Returns the initial file path passed via CLI args (if any).
 #[tauri::command]
 pub fn get_initial_file(state: tauri::State<InitialFileState>) -> Option<String> {
@@ -11,13 +26,15 @@ pub fn get_initial_file(state: tauri::State<InitialFileState>) -> Option<String>
 /// Read a text file from any path on disk (bypasses fs plugin scope).
 #[tauri::command]
 pub fn read_file(path: String) -> Result<String, String> {
-    std::fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", path, e))
+    let canonical = validate_file_path(&path)?;
+    std::fs::read_to_string(&canonical).map_err(|e| format!("Failed to read {}: {}", path, e))
 }
 
 /// Write a text file to any path on disk (bypasses fs plugin scope).
 #[tauri::command]
 pub fn write_file(path: String, content: String) -> Result<(), String> {
-    std::fs::write(&path, &content).map_err(|e| format!("Failed to write {}: {}", path, e))
+    let canonical = validate_file_path(&path)?;
+    std::fs::write(&canonical, &content).map_err(|e| format!("Failed to write {}: {}", path, e))
 }
 
 #[tauri::command]
@@ -122,8 +139,18 @@ pub fn open_md_in_window(app: tauri::AppHandle, path: String) -> Result<(), Stri
 }
 
 /// Open a URL or file path with the system default handler.
+/// Only allows http/https/mailto URLs and absolute file paths.
 #[tauri::command]
 pub fn open_with_system(target: String) -> Result<(), String> {
+    let allowed = target.starts_with("http://")
+        || target.starts_with("https://")
+        || target.starts_with("mailto:")
+        || (target.starts_with('/') && !target.contains('\0'));
+
+    if !allowed {
+        return Err(format!("Blocked disallowed target: {target}"));
+    }
+
     open::that(&target).map_err(|e| format!("Failed to open {}: {}", target, e))
 }
 

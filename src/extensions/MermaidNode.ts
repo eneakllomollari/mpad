@@ -1,4 +1,5 @@
 import { Node } from '@tiptap/react';
+import DOMPurify from 'dompurify';
 import mermaid from 'mermaid';
 
 let lastTheme: string | null = null;
@@ -31,6 +32,7 @@ function ensureMermaidInit(dark: boolean) {
 
   mermaid.initialize({
     startOnLoad: false,
+    securityLevel: 'strict',
     theme: 'base',
     suppressErrorRendering: true,
     themeVariables: THEME_VARS[key],
@@ -146,7 +148,9 @@ export const MermaidNode = Node.create({
           try {
             const id = `mermaid-${node.attrs.index}-${Date.now()}`;
             const { svg } = await mermaid.render(id, node.attrs.code);
-            container.innerHTML = svg;
+            container.innerHTML = DOMPurify.sanitize(svg, {
+              USE_PROFILES: { svg: true, svgFilters: true },
+            });
           } catch {
             container.classList.add('mermaid-error');
             container.textContent = 'Failed to render diagram';
