@@ -25,6 +25,7 @@ export function FindBar({ editor, visible, activationToken, onClose }: FindBarPr
   const barRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
+  const [activeIdx, setActiveIdx] = useState(0);
 
   // Focus and reveal the bar on every explicit find request.
   useEffect(() => {
@@ -56,6 +57,7 @@ export function FindBar({ editor, visible, activationToken, onClose }: FindBarPr
       const s = getSearch(editor);
       s.query = val;
       s.activeIndex = 0;
+      setActiveIdx(0);
       editor.view.dispatch(editor.state.tr);
     },
     [editor],
@@ -67,7 +69,9 @@ export function FindBar({ editor, visible, activationToken, onClose }: FindBarPr
       const s = getSearch(editor);
       if (s.totalMatches === 0) return;
 
-      s.activeIndex = (s.activeIndex + direction + s.totalMatches) % s.totalMatches;
+      const next = (s.activeIndex + direction + s.totalMatches) % s.totalMatches;
+      s.activeIndex = next;
+      setActiveIdx(next);
       editor.view.dispatch(editor.state.tr);
 
       requestAnimationFrame(() => {
@@ -94,7 +98,7 @@ export function FindBar({ editor, visible, activationToken, onClose }: FindBarPr
 
   const s = editor && !editor.isDestroyed ? getSearch(editor) : null;
   const total = s?.totalMatches ?? 0;
-  const current = total > 0 ? (s?.activeIndex ?? 0) + 1 : 0;
+  const current = total > 0 ? activeIdx + 1 : 0;
 
   const countText = query ? `${current} of ${total}` : '';
 
