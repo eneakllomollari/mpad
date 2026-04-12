@@ -1187,14 +1187,14 @@ body {
 
 .tiptap pre .hljs-comment,
 .tiptap pre .hljs-quote {
-  color: var(--text-muted);
+  color: var(--code-comment);
   font-style: italic;
 }
 
 .tiptap pre .hljs-keyword,
 .tiptap pre .hljs-selector-tag,
 .tiptap pre .hljs-addition {
-  color: var(--accent);
+  color: var(--code-keyword);
 }
 
 .tiptap pre .hljs-number,
@@ -1203,7 +1203,7 @@ body {
 .tiptap pre .hljs-literal,
 .tiptap pre .hljs-doctag,
 .tiptap pre .hljs-regexp {
-  color: var(--git-added);
+  color: var(--code-string);
 }
 
 .tiptap pre .hljs-title,
@@ -1211,7 +1211,7 @@ body {
 .tiptap pre .hljs-name,
 .tiptap pre .hljs-selector-id,
 .tiptap pre .hljs-selector-class {
-  color: var(--link-color);
+  color: var(--code-title);
 }
 
 .tiptap pre .hljs-attr,
@@ -1220,7 +1220,7 @@ body {
 .tiptap pre .hljs-template-variable,
 .tiptap pre .hljs-class .hljs-title,
 .tiptap pre .hljs-type {
-  color: var(--git-modified);
+  color: var(--code-attr);
 }
 
 .tiptap pre .hljs-symbol,
@@ -1229,12 +1229,12 @@ body {
 .tiptap pre .hljs-meta,
 .tiptap pre .hljs-meta .hljs-keyword,
 .tiptap pre .hljs-tag {
-  color: var(--text-secondary);
+  color: var(--code-symbol);
 }
 
 .tiptap pre .hljs-built_in,
 .tiptap pre .hljs-deletion {
-  color: var(--git-deleted);
+  color: var(--code-builtin);
 }
 
 .tiptap pre .hljs-emphasis {

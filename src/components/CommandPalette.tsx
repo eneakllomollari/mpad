@@ -50,14 +50,15 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
     const handleGlobalKeydown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
+        e.stopImmediatePropagation();
         onClose();
       } else if (e.key === 'Tab' && paletteRef.current) {
         e.preventDefault();
         inputRef.current?.focus();
       }
     };
-    document.addEventListener('keydown', handleGlobalKeydown);
-    return () => document.removeEventListener('keydown', handleGlobalKeydown);
+    document.addEventListener('keydown', handleGlobalKeydown, true);
+    return () => document.removeEventListener('keydown', handleGlobalKeydown, true);
   }, [onClose]);
 
   // Scroll selected into view

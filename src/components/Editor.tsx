@@ -470,7 +470,7 @@ export function Editor({
         activationToken={findRequestToken}
         onClose={onCloseFindBar}
       />
-      <EditorContent editor={editor} />
+      <EditorContent editor={editor} role="textbox" aria-label="Document editor" />
       {showSlashMenu && editor && (
         <SlashMenu editor={editor} onClose={() => setShowSlashMenu(false)} />
       )}
