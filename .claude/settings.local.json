@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__browser__open",
+      "mcp__browser__screenshot",
+      "mcp__browser__console_logs",
+      "mcp__browser__playwright",
+      "mcp__browser__network_requests",
+      "mcp__browser__accessibility_audit",
+      "mcp__browser__performance_metrics",
+      "Bash(bun run:*)",
+      "mcp__browser__close"
+    ]
+  }
+}
