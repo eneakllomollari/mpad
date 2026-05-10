@@ -1,7 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { open } from '@tauri-apps/plugin-dialog';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { TitleBar } from './components/TitleBar';
@@ -215,21 +214,16 @@ function App() {
     }
   }, [filePath, saveImmediate, refreshDiff]);
 
-  // Open dialog (Cmd+O) — allows selecting files or folders
+  // Cmd+O — single native NSOpenPanel that lets the user pick either a file
+  // or a folder. tauri_plugin_dialog's `open()` can only do one or the other,
+  // so this routes through a custom Rust command that drives NSOpenPanel
+  // directly with canChooseFiles + canChooseDirectories both true.
   const handleOpen = useCallback(async () => {
     try {
-      const selected = await open({
-        directory: true,
-        multiple: false,
-        filters: [
-          { name: 'Markdown', extensions: ['md', 'markdown', 'mdown'] },
-          { name: 'All Files', extensions: ['*'] },
-        ],
-      });
-      if (!selected || typeof selected !== 'string') return;
-      openPath(selected);
+      const selected = await invoke<string | null>('pick_file_or_folder');
+      if (selected) openPath(selected);
     } catch {
-      // Dialog cancelled or unavailable
+      // User cancelled or platform unsupported
     }
   }, [openPath]);
 

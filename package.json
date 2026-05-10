@@ -25,7 +25,6 @@
   "dependencies": {
     "@fontsource-variable/instrument-sans": "^5.2.8",
     "@tauri-apps/api": "^2.11.0",
-    "@tauri-apps/plugin-dialog": "^2.7.0",
     "@tauri-apps/plugin-fs": "^2.5.0",
     "@tiptap/core": "^3.22.2",
     "@tiptap/extension-code-block-lowlight": "^3.22.2",

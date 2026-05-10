@@ -199,3 +199,59 @@ pub fn is_directory(path: String) -> Result<bool, String> {
         std::fs::metadata(&canonical).map_err(|e| format!("Failed to stat {}: {}", path, e))?;
     Ok(meta.is_dir())
 }
+
+/// Open a single native NSOpenPanel that lets the user pick either a file
+/// or a folder in one dialog. tauri_plugin_dialog can only do one or the
+/// other, so we drive AppKit directly.
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub async fn pick_file_or_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    use objc2::MainThreadMarker;
+    use objc2::rc::autoreleasepool;
+    use objc2_app_kit::{NSModalResponseOK, NSOpenPanel};
+    use objc2_foundation::NSString;
+    use std::sync::mpsc::channel;
+
+    let (tx, rx) = channel::<Option<String>>();
+
+    app.run_on_main_thread(move || {
+        let result = autoreleasepool(|_| {
+            let mtm = MainThreadMarker::new()
+                .expect("pick_file_or_folder must run on the main thread");
+            let panel = NSOpenPanel::openPanel(mtm);
+
+            panel.setCanChooseFiles(true);
+            panel.setCanChooseDirectories(true);
+            panel.setAllowsMultipleSelection(false);
+            panel.setResolvesAliases(true);
+            panel.setTitle(Some(&NSString::from_str("Open file or folder")));
+            panel.setMessage(Some(&NSString::from_str(
+                "Choose a markdown file or a folder to browse",
+            )));
+            panel.setPrompt(Some(&NSString::from_str("Open")));
+
+            let response = panel.runModal();
+            if response != NSModalResponseOK {
+                return None;
+            }
+            let urls = panel.URLs();
+            let url = urls.firstObject()?;
+            let path = url.path()?;
+            Some(path.to_string())
+        });
+        let _ = tx.send(result);
+    })
+    .map_err(|e| format!("Failed to dispatch to main thread: {e}"))?;
+
+    rx.recv()
+        .map_err(|e| format!("Failed to receive picker result: {e}"))
+}
+
+/// Non-macOS fallback. Frontend will still call this command; on other
+/// platforms we return an error so the UI can fall back to its previous
+/// behavior or surface a message.
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+pub async fn pick_file_or_folder(_app: tauri::AppHandle) -> Result<Option<String>, String> {
+    Err("pick_file_or_folder is only implemented on macOS".to_string())
+}

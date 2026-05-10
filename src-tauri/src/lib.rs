@@ -38,6 +38,7 @@ pub fn run() {
             commands::open_md_in_window,
             commands::open_with_system,
             commands::is_directory,
+            commands::pick_file_or_folder,
         ])
         .setup(|app| {
             // Handle CLI "file" argument — store the resolved path in state
