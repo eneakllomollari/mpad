@@ -96,7 +96,12 @@ else
 fi
 
 if [ -n "$FILE_ARG" ]; then
-  open -a "$TARGET" --args "$FILE_ARG"
+  # `-n` forces a fresh process so `--args` actually reaches the binary
+  # when mpad is already running. Without `-n`, macOS activates the
+  # existing instance via Apple Events and silently drops `--args`.
+  # tauri_plugin_single_instance catches the new process, hands the file
+  # to the running instance, and opens it in a new window.
+  open -n -a "$TARGET" --args "$FILE_ARG"
 else
   open -a "$TARGET"
 fi
