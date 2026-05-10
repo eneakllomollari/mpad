@@ -1,7 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { filterItems } from '../lib/fuzzyMatch';
 import type { PaletteCommand } from '../lib/fuzzyMatch';
-import { motion } from 'framer-motion';
 
 
 interface Props {
@@ -106,15 +105,8 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
   );
 
   return (
-    <motion.div
-      className="palette-backdrop"
-      onMouseDown={onClose}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.1 }}
-    >
-      <motion.div
+    <div className="palette-backdrop" onMouseDown={onClose}>
+      <div
         ref={paletteRef}
         className="palette"
         role="dialog"
@@ -122,10 +114,6 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
         aria-label="Command palette"
         onMouseDown={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
-        initial={{ opacity: 0, scale: 0.98, y: -10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.98, y: -10 }}
-        transition={{ type: "spring", stiffness: 500, damping: 30, mass: 0.5 }}
       >
         <input
           ref={inputRef}
@@ -165,7 +153,7 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
             </div>
           ))}
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 });

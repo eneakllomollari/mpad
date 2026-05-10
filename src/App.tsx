@@ -4,8 +4,6 @@ import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
-import { AnimatePresence, motion } from 'framer-motion';
-
 import { Editor } from './components/Editor';
 import { TitleBar } from './components/TitleBar';
 import { CommandPalette } from './components/CommandPalette';
@@ -20,6 +18,7 @@ import { useFileWatcher } from './hooks/useFileWatcher';
 import { useTheme } from './hooks/useTheme';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useResizable } from './hooks/useResizable';
+import { useStickyTrue } from './hooks/useStickyTrue';
 
 const modKey = navigator.platform.startsWith('Mac') ? '⌘' : 'Ctrl+';
 
@@ -43,6 +42,13 @@ function App() {
   const [findRequestToken, setFindRequestToken] = useState(0);
 
   const [, setZoom] = useState(100);
+
+  // Sticky "has been opened" flags so lazy panels mount once and stay
+  // mounted for smooth open/close CSS transitions. Uses the React-documented
+  // setState-during-render pattern for derived state, not useEffect.
+  const sidebarMounted = useStickyTrue(showSidebar);
+  const diffMounted = useStickyTrue(showDiff);
+  const gitLogMounted = useStickyTrue(showGitLog);
 
   // Cached markdown file list for command palette
   const [mdFiles, setMdFiles] = useState<string[]>([]);
@@ -306,30 +312,26 @@ function App() {
     <div className="app-layout">
       <TitleBar />
       <div className="app-content">
-        <AnimatePresence initial={false}>
-          {showSidebar && (
-            <motion.div
-              key="sidebar"
-              initial={{ width: 0, opacity: 0, x: -20 }}
-              animate={{ width: sidebar.size + 4, opacity: 1, x: 0 }}
-              exit={{ width: 0, opacity: 0, x: -20 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              style={{ display: 'flex', flexShrink: 0, overflow: 'hidden' }}
-            >
-              <Suspense>
-                <Sidebar
-                  folderPath={folderPath}
-                  repoPath={repoPath}
-                  currentFile={filePath}
-                  onFileSelect={loadFile}
-                  visible={showSidebar}
-                  style={{ width: sidebar.size }}
-                />
-                <div className="resize-handle resize-handle-h" onMouseDown={sidebar.onMouseDown} onKeyDown={sidebar.onKeyDown} {...sidebar.ariaProps} />
-              </Suspense>
-            </motion.div>
+        <div
+          className="panel-side panel-side--left"
+          data-show={String(showSidebar)}
+          style={{ width: showSidebar ? sidebar.size + 4 : 0 }}
+          aria-hidden={!showSidebar}
+        >
+          {sidebarMounted && (
+            <Suspense>
+              <Sidebar
+                folderPath={folderPath}
+                repoPath={repoPath}
+                currentFile={filePath}
+                onFileSelect={loadFile}
+                visible={showSidebar}
+                style={{ width: sidebar.size }}
+              />
+              <div className="resize-handle resize-handle-h" onMouseDown={sidebar.onMouseDown} onKeyDown={sidebar.onKeyDown} {...sidebar.ariaProps} />
+            </Suspense>
           )}
-        </AnimatePresence>
+        </div>
 
         <main className="app-main">
           <div className="editor-area">
@@ -360,61 +362,51 @@ function App() {
               )}
             </div>
 
-            <AnimatePresence initial={false}>
-              {showDiff && (
-                <motion.div
-                  key="diff"
-                  initial={{ width: 0, opacity: 0, x: 20 }}
-                  animate={{ width: diffPanel.size + 4, opacity: 1, x: 0 }}
-                  exit={{ width: 0, opacity: 0, x: 20 }}
-                  transition={{ duration: 0.2, ease: "easeInOut" }}
-                  style={{ display: 'flex', flexShrink: 0, overflow: 'hidden' }}
-                >
-                  <Suspense>
-                    <div className="resize-handle resize-handle-h" onMouseDown={diffPanel.onMouseDown} onKeyDown={diffPanel.onKeyDown} {...diffPanel.ariaProps} />
-                    <DiffView diff={diff} visible={showDiff} style={{ width: diffPanel.size }} />
-                  </Suspense>
-                </motion.div>
+            <div
+              className="panel-side panel-side--right"
+              data-show={String(showDiff)}
+              style={{ width: showDiff ? diffPanel.size + 4 : 0 }}
+              aria-hidden={!showDiff}
+            >
+              {diffMounted && (
+                <Suspense>
+                  <div className="resize-handle resize-handle-h" onMouseDown={diffPanel.onMouseDown} onKeyDown={diffPanel.onKeyDown} {...diffPanel.ariaProps} />
+                  <DiffView diff={diff} visible={showDiff} style={{ width: diffPanel.size }} />
+                </Suspense>
               )}
-            </AnimatePresence>
+            </div>
           </div>
 
-          <AnimatePresence initial={false}>
-            {showGitLog && (
-              <motion.div
-                key="gitlog"
-                initial={{ height: 0, opacity: 0, y: 20 }}
-                animate={{ height: gitLog.size + 4, opacity: 1, y: 0 }}
-                exit={{ height: 0, opacity: 0, y: 20 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden' }}
-              >
-                <Suspense>
-                  <div className="resize-handle resize-handle-v" onMouseDown={gitLog.onMouseDown} onKeyDown={gitLog.onKeyDown} {...gitLog.ariaProps} />
-                  <GitLog
-                    repoPath={repoPath}
-                    filePath={filePath}
-                    style={{ height: gitLog.size }}
-                  />
-                </Suspense>
-              </motion.div>
+          <div
+            className="panel-bottom"
+            data-show={String(showGitLog)}
+            style={{ height: showGitLog ? gitLog.size + 4 : 0 }}
+            aria-hidden={!showGitLog}
+          >
+            {gitLogMounted && (
+              <Suspense>
+                <div className="resize-handle resize-handle-v" onMouseDown={gitLog.onMouseDown} onKeyDown={gitLog.onKeyDown} {...gitLog.ariaProps} />
+                <GitLog
+                  repoPath={repoPath}
+                  filePath={filePath}
+                  style={{ height: gitLog.size }}
+                />
+              </Suspense>
             )}
-          </AnimatePresence>
+          </div>
         </main>
       </div>
 
-      <AnimatePresence>
-        {showPalette && (
-          <CommandPalette
-            key={paletteKey}
-            commands={paletteCommands}
-            files={mdFiles}
-            repoPath={folderPath}
-            onFileSelect={loadFile}
-            onClose={() => setShowPalette(false)}
-          />
-        )}
-      </AnimatePresence>
+      {showPalette && (
+        <CommandPalette
+          key={paletteKey}
+          commands={paletteCommands}
+          files={mdFiles}
+          repoPath={folderPath}
+          onFileSelect={loadFile}
+          onClose={() => setShowPalette(false)}
+        />
+      )}
     </div>
   );
 }

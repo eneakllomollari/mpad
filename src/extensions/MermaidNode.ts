@@ -1,8 +1,11 @@
 import { Node } from '@tiptap/react';
-import DOMPurify from 'dompurify';
-import mermaid from 'mermaid';
+
+type MermaidModule = typeof import('mermaid').default;
+type DompurifyModule = typeof import('dompurify').default;
 
 let lastTheme: string | null = null;
+let mermaidPromise: Promise<MermaidModule> | null = null;
+let dompurifyPromise: Promise<DompurifyModule> | null = null;
 
 const THEME_VARS = {
   dark: {
@@ -25,9 +28,24 @@ const THEME_VARS = {
   },
 };
 
-function ensureMermaidInit(dark: boolean) {
+function loadMermaid(): Promise<MermaidModule> {
+  if (!mermaidPromise) {
+    mermaidPromise = import('mermaid').then((m) => m.default);
+  }
+  return mermaidPromise;
+}
+
+function loadDompurify(): Promise<DompurifyModule> {
+  if (!dompurifyPromise) {
+    dompurifyPromise = import('dompurify').then((m) => m.default);
+  }
+  return dompurifyPromise;
+}
+
+async function ensureMermaidInit(dark: boolean): Promise<MermaidModule> {
+  const mermaid = await loadMermaid();
   const key = dark ? 'dark' : 'light';
-  if (lastTheme === key) return;
+  if (lastTheme === key) return mermaid;
   lastTheme = key;
 
   mermaid.initialize({
@@ -37,6 +55,7 @@ function ensureMermaidInit(dark: boolean) {
     suppressErrorRendering: true,
     themeVariables: THEME_VARS[key],
   });
+  return mermaid;
 }
 
 export const MermaidNode = Node.create({
@@ -105,8 +124,6 @@ export const MermaidNode = Node.create({
       dom.setAttribute('data-type', 'mermaidBlock');
 
       let showSource = false;
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      ensureMermaidInit(isDark);
 
       const render = async () => {
         dom.innerHTML = '';
@@ -146,6 +163,11 @@ export const MermaidNode = Node.create({
           container.setAttribute('role', 'img');
           container.setAttribute('aria-label', 'Mermaid diagram');
           try {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const [mermaid, DOMPurify] = await Promise.all([
+              ensureMermaidInit(isDark),
+              loadDompurify(),
+            ]);
             const id = `mermaid-${node.attrs.index}-${Date.now()}`;
             const { svg } = await mermaid.render(id, node.attrs.code);
             container.innerHTML = DOMPurify.sanitize(svg, {

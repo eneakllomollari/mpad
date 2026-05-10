@@ -34,6 +34,18 @@ export default defineConfig([
             group: ['moment', 'moment-timezone'],
             message: 'moment.js is 300kb+. Use Intl or date-fns/tiny if needed.',
           },
+          {
+            group: ['mermaid', 'mermaid/*'],
+            message: 'mermaid is heavy (pulls in d3, cytoscape, katex, etc). Use dynamic import() inside MermaidNode.ts to keep it out of the main bundle.',
+          },
+          {
+            group: ['dompurify', 'dompurify/*'],
+            message: 'DOMPurify is only used in MermaidNode for SVG sanitization. Lazy-load it with mermaid via dynamic import().',
+          },
+          {
+            group: ['framer-motion', 'framer-motion/*'],
+            message: 'framer-motion is heavy. Use CSS transitions/animations (see panel-side and palette-pop-in patterns in editor.css).',
+          },
         ],
         paths: [
           {

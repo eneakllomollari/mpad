@@ -7,7 +7,33 @@ import { Markdown } from 'tiptap-markdown';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import Highlight from '@tiptap/extension-highlight';
 import Image from '@tiptap/extension-image';
-import { common, createLowlight } from 'lowlight';
+import { createLowlight } from 'lowlight';
+import bash from 'highlight.js/lib/languages/bash';
+import c from 'highlight.js/lib/languages/c';
+import cpp from 'highlight.js/lib/languages/cpp';
+import csharp from 'highlight.js/lib/languages/csharp';
+import css from 'highlight.js/lib/languages/css';
+import diff from 'highlight.js/lib/languages/diff';
+import go from 'highlight.js/lib/languages/go';
+import graphql from 'highlight.js/lib/languages/graphql';
+import java from 'highlight.js/lib/languages/java';
+import javascript from 'highlight.js/lib/languages/javascript';
+import json from 'highlight.js/lib/languages/json';
+import kotlin from 'highlight.js/lib/languages/kotlin';
+import makefile from 'highlight.js/lib/languages/makefile';
+import markdown from 'highlight.js/lib/languages/markdown';
+import php from 'highlight.js/lib/languages/php';
+import plaintext from 'highlight.js/lib/languages/plaintext';
+import python from 'highlight.js/lib/languages/python';
+import ruby from 'highlight.js/lib/languages/ruby';
+import rust from 'highlight.js/lib/languages/rust';
+import scss from 'highlight.js/lib/languages/scss';
+import shell from 'highlight.js/lib/languages/shell';
+import sql from 'highlight.js/lib/languages/sql';
+import swift from 'highlight.js/lib/languages/swift';
+import typescript from 'highlight.js/lib/languages/typescript';
+import xml from 'highlight.js/lib/languages/xml';
+import yaml from 'highlight.js/lib/languages/yaml';
 import { gfmExtensions } from '../extensions/gfm';
 import { FrontmatterNode } from '../extensions/FrontmatterNode';
 import { XmlBlockNode } from '../extensions/XmlBlockNode';
@@ -27,7 +53,11 @@ import { SearchHighlight } from '../extensions/SearchHighlight';
 import { TaskItemAutoRemove } from '../extensions/TaskItemAutoRemove';
 import { FindBar } from './FindBar';
 
-const lowlight = createLowlight(common);
+const lowlight = createLowlight({
+  bash, c, cpp, csharp, css, diff, go, graphql, java, javascript, json, kotlin,
+  makefile, markdown, php, plaintext, python, ruby, rust, scss, shell, sql,
+  swift, typescript, xml, yaml,
+});
 
 type Level = 1 | 2 | 3 | 4 | 5 | 6;
 
