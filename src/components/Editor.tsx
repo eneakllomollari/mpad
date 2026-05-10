@@ -9,30 +9,12 @@ import Highlight from '@tiptap/extension-highlight';
 import Image from '@tiptap/extension-image';
 import { createLowlight } from 'lowlight';
 import bash from 'highlight.js/lib/languages/bash';
-import c from 'highlight.js/lib/languages/c';
-import cpp from 'highlight.js/lib/languages/cpp';
-import csharp from 'highlight.js/lib/languages/csharp';
-import css from 'highlight.js/lib/languages/css';
-import diff from 'highlight.js/lib/languages/diff';
-import go from 'highlight.js/lib/languages/go';
-import graphql from 'highlight.js/lib/languages/graphql';
-import java from 'highlight.js/lib/languages/java';
 import javascript from 'highlight.js/lib/languages/javascript';
 import json from 'highlight.js/lib/languages/json';
-import kotlin from 'highlight.js/lib/languages/kotlin';
-import makefile from 'highlight.js/lib/languages/makefile';
 import markdown from 'highlight.js/lib/languages/markdown';
-import php from 'highlight.js/lib/languages/php';
 import plaintext from 'highlight.js/lib/languages/plaintext';
 import python from 'highlight.js/lib/languages/python';
-import ruby from 'highlight.js/lib/languages/ruby';
-import rust from 'highlight.js/lib/languages/rust';
-import scss from 'highlight.js/lib/languages/scss';
-import shell from 'highlight.js/lib/languages/shell';
-import sql from 'highlight.js/lib/languages/sql';
-import swift from 'highlight.js/lib/languages/swift';
 import typescript from 'highlight.js/lib/languages/typescript';
-import xml from 'highlight.js/lib/languages/xml';
 import yaml from 'highlight.js/lib/languages/yaml';
 import { gfmExtensions } from '../extensions/gfm';
 import { FrontmatterNode } from '../extensions/FrontmatterNode';
@@ -54,10 +36,46 @@ import { TaskItemAutoRemove } from '../extensions/TaskItemAutoRemove';
 import { FindBar } from './FindBar';
 
 const lowlight = createLowlight({
-  bash, c, cpp, csharp, css, diff, go, graphql, java, javascript, json, kotlin,
-  makefile, markdown, php, plaintext, python, ruby, rust, scss, shell, sql,
-  swift, typescript, xml, yaml,
+  bash, javascript, json, markdown, plaintext, python, typescript, yaml,
 });
+
+// Defer the 18 less-common syntax grammars to a separate chunk loaded after mount.
+// They register on idle, after which we re-dispatch a transaction to refresh
+// existing code-block decorations.
+let extraLanguagesPromise: Promise<void> | null = null;
+function registerExtraLanguages(): Promise<void> {
+  if (!extraLanguagesPromise) {
+    extraLanguagesPromise = Promise.all([
+      import('highlight.js/lib/languages/c'),
+      import('highlight.js/lib/languages/cpp'),
+      import('highlight.js/lib/languages/csharp'),
+      import('highlight.js/lib/languages/css'),
+      import('highlight.js/lib/languages/diff'),
+      import('highlight.js/lib/languages/go'),
+      import('highlight.js/lib/languages/graphql'),
+      import('highlight.js/lib/languages/java'),
+      import('highlight.js/lib/languages/kotlin'),
+      import('highlight.js/lib/languages/makefile'),
+      import('highlight.js/lib/languages/php'),
+      import('highlight.js/lib/languages/ruby'),
+      import('highlight.js/lib/languages/rust'),
+      import('highlight.js/lib/languages/scss'),
+      import('highlight.js/lib/languages/shell'),
+      import('highlight.js/lib/languages/sql'),
+      import('highlight.js/lib/languages/swift'),
+      import('highlight.js/lib/languages/xml'),
+    ]).then(([c, cpp, csharp, css, diff, go, graphql, java, kotlin, makefile, php, ruby, rust, scss, shell, sql, swift, xml]) => {
+      lowlight.register({
+        c: c.default, cpp: cpp.default, csharp: csharp.default, css: css.default,
+        diff: diff.default, go: go.default, graphql: graphql.default, java: java.default,
+        kotlin: kotlin.default, makefile: makefile.default, php: php.default,
+        ruby: ruby.default, rust: rust.default, scss: scss.default, shell: shell.default,
+        sql: sql.default, swift: swift.default, xml: xml.default,
+      });
+    });
+  }
+  return extraLanguagesPromise;
+}
 
 type Level = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -270,23 +288,15 @@ export function Editor({
   findRequestToken,
   onCloseFindBar,
 }: EditorProps) {
-  const processedRef = useRef<Processed>({
-    frontmatter: null,
-    body: '',
-    xmlBlocks: [],
-    mermaidBlocks: [],
-  });
-
   const [showSlashMenu, setShowSlashMenu] = useState(false);
+  const closeSlashMenu = useCallback(() => setShowSlashMenu(false), []);
   const sessionCacheRef = useRef<Map<string, CachedEditorSession>>(new Map());
   const prevFilePathRef = useRef(filePath);
 
-  const processed = useMemo(() => {
-    const p = preprocessContent(content);
-    processedRef.current = p;
-    return p;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Compute the initial processed content once via lazy state init,
+  // avoiding render-phase ref writes (banned per project conventions).
+  const [initialProcessed] = useState(() => preprocessContent(content));
+  const processedRef = useRef<Processed>(initialProcessed);
 
   // Extensions are stable — LinkResolver uses storage for filePath, not configure()
   const extensions = useMemo(
@@ -347,7 +357,7 @@ export function Editor({
 
   const editor = useEditor({
     extensions,
-    content: processed.body,
+    content: initialProcessed.body,
     onUpdate: ({ editor: ed }) => {
       const storage = (ed.storage as unknown as Record<string, { getMarkdown?: () => string }>)?.markdown;
       if (!storage?.getMarkdown) return;
@@ -386,8 +396,14 @@ export function Editor({
 
     const previousFilePath = prevFilePathRef.current;
     const switchingFiles = previousFilePath !== filePath;
-    const processedContent = preprocessContent(content);
+    const contentChanged = content !== lastKnownContent.current;
 
+    if (!switchingFiles && !contentChanged) {
+      prevFilePathRef.current = filePath;
+      return;
+    }
+
+    const processedContent = preprocessContent(content);
     processedRef.current = processedContent;
 
     if (switchingFiles) {
@@ -411,13 +427,43 @@ export function Editor({
       return;
     }
 
-    if (content !== lastKnownContent.current) {
+    if (contentChanged) {
       lastKnownContent.current = content;
       loadEditorDocument(editor, processedContent.body);
     }
 
     prevFilePathRef.current = filePath;
   }, [content, editor, filePath, focusEditorAfterFileSwitch, showSource]);
+
+  // Lazy-load less-common syntax grammars on idle, then refresh decorations
+  // so any code blocks already in the document pick up highlighting.
+  useEffect(() => {
+    if (!editor) return;
+    type IdleWindow = Window & {
+      requestIdleCallback?: (cb: () => void) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    const w = window as IdleWindow;
+    let cancelled = false;
+    const run = () => {
+      registerExtraLanguages().then(() => {
+        if (cancelled || editor.isDestroyed) return;
+        editor.view.dispatch(editor.state.tr);
+      });
+    };
+    let idleId: number | null = null;
+    let timerId: number | null = null;
+    if (w.requestIdleCallback) {
+      idleId = w.requestIdleCallback(run);
+    } else {
+      timerId = window.setTimeout(run, 0);
+    }
+    return () => {
+      cancelled = true;
+      if (idleId !== null && w.cancelIdleCallback) w.cancelIdleCallback(idleId);
+      if (timerId !== null) window.clearTimeout(timerId);
+    };
+  }, [editor]);
 
   const handleSourceChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -502,7 +548,7 @@ export function Editor({
       />
       <EditorContent editor={editor} role="textbox" aria-label="Document editor" />
       {showSlashMenu && editor && (
-        <SlashMenu editor={editor} onClose={() => setShowSlashMenu(false)} />
+        <SlashMenu editor={editor} onClose={closeSlashMenu} />
       )}
     </div>
   );

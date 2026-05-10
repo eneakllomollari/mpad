@@ -4,11 +4,11 @@ import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
-import { Editor } from './components/Editor';
 import { TitleBar } from './components/TitleBar';
 import { CommandPalette } from './components/CommandPalette';
 import type { PaletteCommand } from './lib/fuzzyMatch';
 
+const Editor = lazy(() => import('./components/Editor').then(m => ({ default: m.Editor })));
 const DiffView = lazy(() => import('./components/DiffView').then(m => ({ default: m.DiffView })));
 const Sidebar = lazy(() => import('./components/Sidebar').then(m => ({ default: m.Sidebar })));
 const GitLog = lazy(() => import('./components/GitLog').then(m => ({ default: m.GitLog })));
@@ -337,15 +337,17 @@ function App() {
           <div className="editor-area">
             <div className="editor-container">
               {filePath ? (
-                <Editor
-                  content={content}
-                  onUpdate={handleEditorUpdate}
-                  showSource={showSource}
-                  filePath={filePath}
-                  showFind={showFind}
-                  findRequestToken={findRequestToken}
-                  onCloseFindBar={() => setShowFind(false)}
-                />
+                <Suspense>
+                  <Editor
+                    content={content}
+                    onUpdate={handleEditorUpdate}
+                    showSource={showSource}
+                    filePath={filePath}
+                    showFind={showFind}
+                    findRequestToken={findRequestToken}
+                    onCloseFindBar={() => setShowFind(false)}
+                  />
+                </Suspense>
               ) : (
                 <div className="empty-state">
                   <div className="empty-state-actions">
