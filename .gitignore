@@ -40,3 +40,6 @@ coverage/
 
 # Expect test sessions
 .expect/
+
+# Dogfood QA artifacts
+dogfood-output/

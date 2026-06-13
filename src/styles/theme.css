@@ -119,6 +119,7 @@
   --palette-selected: #ecebe5;
   --palette-border: rgba(0, 0, 0, 0.08);
   --palette-backdrop: rgba(23, 24, 20, 0.18);
+  --tree-active-bg: rgba(0, 0, 0, 0.055);
 }
 
 /* ── Dark Theme ────────────────────────────────────── */
@@ -204,4 +205,5 @@
   --palette-selected: #34362f;
   --palette-border: rgba(255, 255, 255, 0.1);
   --palette-backdrop: rgba(0, 0, 0, 0.3);
+  --tree-active-bg: rgba(255, 255, 255, 0.075);
 }
