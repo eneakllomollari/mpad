@@ -1658,14 +1658,16 @@ body {
   outline-offset: 2px;
 }
 
+/* No focus ring on the full editing surface — the text caret is the
+   affordance, and :focus-visible fires on click for contenteditable. */
 .tiptap:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 2px var(--accent-subtle);
+  box-shadow: none;
 }
 
 .source-editor:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 2px var(--accent-subtle);
+  box-shadow: none;
 }
 
 .palette-input:focus-visible {
