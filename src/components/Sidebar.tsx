@@ -128,7 +128,7 @@ function TreeItem({
     const root = node.fullPath.split('/')[0];
     return root === '.claude' || root === '.cursor' || root === '.agents';
   });
-  const paddingLeft = `${0.75 + depth * 0.75}em`;
+  const paddingLeft = `${1 + depth * 0.85}rem`;
 
   const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -268,10 +268,8 @@ export function Sidebar({
     <nav className="sidebar" style={style} aria-label="File explorer">
       <div className="sidebar-header">{folderPath ? folderPath.split('/').filter(Boolean).pop() : 'Files'}</div>
       <div className="file-tree" role="tree" aria-label="Files">
-        {tree.length === 0 && !folderPath && (
-          <div style={{ padding: '0.75em', color: 'var(--text-muted)' }}>
-            Open a folder with {'\u2318'}Shift+O
-          </div>
+        {tree.length === 0 && folderPath && (
+          <div className="sidebar-empty">No Markdown files in this folder.</div>
         )}
         {tree
           .map((node) => (

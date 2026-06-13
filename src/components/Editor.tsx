@@ -289,8 +289,9 @@ export function Editor({
   onCloseFindBar,
 }: EditorProps) {
   const [showSlashMenu, setShowSlashMenu] = useState(false);
+  const [slashMenuFilePath, setSlashMenuFilePath] = useState<string | null>(null);
   const closeSlashMenu = useCallback(() => setShowSlashMenu(false), []);
-  const sessionCacheRef = useRef<Map<string, CachedEditorSession>>(new Map());
+  const [sessionCache] = useState(() => new Map<string, CachedEditorSession>());
   const prevFilePathRef = useRef(filePath);
 
   // Compute the initial processed content once via lazy state init,
@@ -303,6 +304,11 @@ export function Editor({
     () => [
       StarterKit.configure({
         codeBlock: false,
+        link: {
+          openOnClick: false,
+          autolink: true,
+          linkOnPaste: true,
+        },
       }),
       CodeBlockLowlight.configure({
         lowlight,
@@ -368,6 +374,7 @@ export function Editor({
       handleKeyDown: (view, event) => {
         if (shouldOpenSlashMenu(view, event)) {
           event.preventDefault();
+          setSlashMenuFilePath(filePath);
           setShowSlashMenu(true);
           return true;
         }
@@ -407,10 +414,8 @@ export function Editor({
     processedRef.current = processedContent;
 
     if (switchingFiles) {
-      cacheEditorSession(sessionCacheRef.current, previousFilePath, editor, lastKnownContent.current);
-      setShowSlashMenu(false);
-
-      const cachedSession = getCachedEditorSession(sessionCacheRef.current, filePath, content);
+      cacheEditorSession(sessionCache, previousFilePath, editor, lastKnownContent.current);
+      const cachedSession = getCachedEditorSession(sessionCache, filePath, content);
 
       if (cachedSession) {
         editor.view.updateState(cachedSession.state);
@@ -433,7 +438,7 @@ export function Editor({
     }
 
     prevFilePathRef.current = filePath;
-  }, [content, editor, filePath, focusEditorAfterFileSwitch, showSource]);
+  }, [content, editor, filePath, focusEditorAfterFileSwitch, sessionCache, showSource]);
 
   // Lazy-load less-common syntax grammars on idle, then refresh decorations
   // so any code blocks already in the document pick up highlighting.
@@ -547,7 +552,7 @@ export function Editor({
         onClose={onCloseFindBar}
       />
       <EditorContent editor={editor} role="textbox" aria-label="Document editor" />
-      {showSlashMenu && editor && (
+      {showSlashMenu && slashMenuFilePath === filePath && editor && (
         <SlashMenu editor={editor} onClose={closeSlashMenu} />
       )}
     </div>

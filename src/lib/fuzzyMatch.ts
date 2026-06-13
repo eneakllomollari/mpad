@@ -29,6 +29,8 @@ interface FilterResult {
   hint?: string;
   score: number;
   id: string;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 export interface PaletteCommand {
@@ -36,6 +38,8 @@ export interface PaletteCommand {
   label: string;
   shortcut?: string;
   action: () => void;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 export function filterItems(
@@ -50,12 +54,15 @@ export function filterItems(
   if (!query.trim()) {
     for (let i = 0; i < commands.length; i++) {
       const cmd = commands[i];
+      if (cmd.disabled) continue;
       results.push({
         type: 'command',
         label: cmd.label,
-        hint: cmd.shortcut,
+        hint: cmd.disabled ? cmd.disabledReason : cmd.shortcut,
         score: commands.length - i,
         id: cmd.id,
+        disabled: cmd.disabled,
+        disabledReason: cmd.disabledReason,
       });
     }
     if (results.length > limit) results.length = limit;
@@ -69,9 +76,11 @@ export function filterItems(
       results.push({
         type: 'command',
         label: cmd.label,
-        hint: cmd.shortcut,
+        hint: cmd.disabled ? cmd.disabledReason : cmd.shortcut,
         score: m.score + 2000,
         id: cmd.id,
+        disabled: cmd.disabled,
+        disabledReason: cmd.disabledReason,
       });
     }
   }

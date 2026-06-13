@@ -70,6 +70,7 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
     (item: { type: string; id: string }) => {
       if (item.type === 'command') {
         const cmd = commands.find((c) => c.id === item.id);
+        if (cmd?.disabled) return;
         cmd?.action();
       } else if (repoPath) {
         const base = repoPath.endsWith('/') ? repoPath : `${repoPath}/`;
@@ -120,10 +121,11 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
           type="text"
           value={query}
           onChange={handleQueryChange}
-          placeholder="Search files and commands..."
+          placeholder="Search"
           className="palette-input"
           spellCheck={false}
           autoComplete="off"
+          aria-label="Find a file or action"
           role="combobox"
           aria-expanded={results.length > 0}
           aria-controls={LISTBOX_ID}
@@ -132,7 +134,7 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
         />
         <div ref={listRef} id={LISTBOX_ID} role="listbox" className="palette-list" aria-label="Results">
           {query.trim() && results.length === 0 && (
-            <div className="palette-empty" role="status">No results</div>
+            <div className="palette-empty" role="status">No matching file or action</div>
           )}
           {results.map((item, i) => (
             <div
@@ -140,7 +142,8 @@ export const CommandPalette = memo(function CommandPalette({ commands, files, re
               id={itemId(item)}
               role="option"
               aria-selected={i === clamped}
-              className={`palette-item ${i === clamped ? 'selected' : ''}`}
+              aria-disabled={item.disabled || undefined}
+              className={`palette-item ${i === clamped ? 'selected' : ''} ${item.disabled ? 'disabled' : ''}`}
               onMouseDown={(e) => { e.preventDefault(); execute(item); }}
               onMouseEnter={() => setSelectedIndex(i)}
             >

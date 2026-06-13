@@ -5,6 +5,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { TitleBar } from './components/TitleBar';
 import { CommandPalette } from './components/CommandPalette';
+import { StatusBar } from './components/StatusBar';
 import type { PaletteCommand } from './lib/fuzzyMatch';
 
 const Editor = lazy(() => import('./components/Editor').then(m => ({ default: m.Editor })));
@@ -24,7 +25,7 @@ const modKey = navigator.platform.startsWith('Mac') ? '⌘' : 'Ctrl+';
 function App() {
   useTheme();
 
-  const { readFile, save, saveImmediate } = useFileOperations();
+  const { readFile, save, saveImmediate, saveStatus, resetSaveStatus } = useFileOperations();
 
   const [filePath, setFilePath] = useState<string | null>(null);
   const [content, setContent] = useState('');
@@ -39,6 +40,7 @@ function App() {
   const [diff, setDiff] = useState('');
   const [showFind, setShowFind] = useState(false);
   const [findRequestToken, setFindRequestToken] = useState(0);
+  const [fileStatus, setFileStatus] = useState<{ branch: string; status: string } | null>(null);
 
   const [, setZoom] = useState(100);
 
@@ -48,6 +50,7 @@ function App() {
   const sidebarMounted = useStickyTrue(showSidebar);
   const diffMounted = useStickyTrue(showDiff);
   const gitLogMounted = useStickyTrue(showGitLog);
+  const sidebarVisible = showSidebar && Boolean(folderPath);
 
   // Cached markdown file list for command palette
   const [mdFiles, setMdFiles] = useState<string[]>([]);
@@ -76,6 +79,7 @@ function App() {
       if (textResult.status === 'fulfilled') {
         setContent(textResult.value);
         setFilePath(path);
+        resetSaveStatus();
         getCurrentWindow().setTitle('mpad').catch(() => {});
       } else {
         console.error('Failed to read file:', textResult.reason);
@@ -94,7 +98,7 @@ function App() {
           .catch(() => setDiff(''));
       }
     },
-    [readFile],
+    [readFile, resetSaveStatus],
   );
 
   // Open a path — handles both files and directories from CLI, URL, or dialog
@@ -196,23 +200,66 @@ function App() {
     }
   }, [fetchDiff]);
 
+  const refreshFileStatus = useCallback(() => {
+    const filePathAtRequest = filePathRef.current;
+    const repoPathAtRequest = repoPathRef.current;
+
+    if (!filePathAtRequest || !repoPathAtRequest) {
+      setFileStatus(null);
+      return;
+    }
+
+    invoke<{ branch: string; status: string }>('git_file_status', {
+      repoPath: repoPathAtRequest,
+      filePath: filePathAtRequest,
+    })
+      .then((status) => {
+        if (filePathRef.current === filePathAtRequest && repoPathRef.current === repoPathAtRequest) {
+          setFileStatus(status);
+        }
+      })
+      .catch(() => setFileStatus(null));
+  }, []);
+
+  useEffect(() => {
+    if (!filePath || !repoPath) {
+      Promise.resolve().then(() => setFileStatus(null));
+      return;
+    }
+
+    let stale = false;
+    invoke<{ branch: string; status: string }>('git_file_status', { repoPath, filePath })
+      .then((status) => { if (!stale) setFileStatus(status); })
+      .catch(() => { if (!stale) setFileStatus(null); });
+
+    return () => { stale = true; };
+  }, [filePath, repoPath]);
+
   // Editor update handler
   const handleEditorUpdate = useCallback(
     (md: string) => {
       setContent(md);
       if (filePath) {
-        save(filePath, md, refreshDiff);
+        save(filePath, md, () => {
+          refreshDiff();
+          refreshFileStatus();
+        });
       }
     },
-    [filePath, save, refreshDiff],
+    [filePath, save, refreshDiff, refreshFileStatus],
   );
 
   // Force save (Cmd+S) — write immediately, no debounce
   const handleSave = useCallback(() => {
     if (filePath) {
-      saveImmediate(filePath, contentRef.current).then(refreshDiff);
+      saveImmediate(filePath, contentRef.current)
+        .then(() => {
+          refreshDiff();
+          refreshFileStatus();
+        })
+        .catch(() => {});
     }
-  }, [filePath, saveImmediate, refreshDiff]);
+  }, [filePath, saveImmediate, refreshDiff, refreshFileStatus]);
 
   // Cmd+O — single native NSOpenPanel that lets the user pick either a file
   // or a folder. tauri_plugin_dialog's `open()` can only do one or the other,
@@ -229,6 +276,7 @@ function App() {
 
   // Toggle diff
   const handleToggleDiff = useCallback(async () => {
+    if (!filePath || !repoPath) return;
     if (!showDiff && filePath && repoPath) {
       await fetchDiff(filePath, repoPath);
     }
@@ -258,25 +306,84 @@ function App() {
   }, [applyZoom]);
 
   const openFind = useCallback(() => {
+    if (!filePathRef.current) return;
     setShowFind(true);
     setFindRequestToken((token) => token + 1);
   }, []);
 
+  const toggleSource = useCallback(() => {
+    if (!filePathRef.current) return;
+    setShowSource((v) => !v);
+  }, []);
+
+  const toggleGitLog = useCallback(() => {
+    if (!filePathRef.current || !repoPathRef.current) return;
+    setShowGitLog((v) => !v);
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    if (!folderPath) {
+      handleOpen();
+      return;
+    }
+    setShowSidebar((v) => !v);
+  }, [folderPath, handleOpen]);
+
   // Palette commands
   const paletteCommands: PaletteCommand[] = useMemo(
     () => [
-      { id: 'save', label: 'Save', shortcut: `${modKey}S`, action: handleSave },
-      { id: 'open', label: 'Open', shortcut: `${modKey}O`, action: handleOpen },
-      { id: 'find', label: 'Find', shortcut: `${modKey}F`, action: openFind },
-      { id: 'source', label: 'Toggle Source', shortcut: `${modKey}/`, action: () => setShowSource((v) => !v) },
-      { id: 'sidebar', label: 'Toggle Sidebar', shortcut: '[', action: () => setShowSidebar((v) => !v) },
-      { id: 'diff', label: 'Toggle Diff', shortcut: ']', action: handleToggleDiff },
-      { id: 'gitlog', label: 'Toggle Git Log', shortcut: `${modKey}L`, action: () => setShowGitLog((v) => !v) },
-      { id: 'zoomin', label: 'Zoom In', shortcut: `${modKey}+`, action: handleZoomIn },
-      { id: 'zoomout', label: 'Zoom Out', shortcut: `${modKey}-`, action: handleZoomOut },
-      { id: 'zoomreset', label: 'Zoom Reset', shortcut: `${modKey}0`, action: handleZoomReset },
+      {
+        id: 'save',
+        label: 'Save changes',
+        shortcut: `${modKey}S`,
+        action: handleSave,
+        disabled: !filePath,
+        disabledReason: 'No document selected',
+      },
+      { id: 'open', label: 'Open file or folder', shortcut: `${modKey}O`, action: handleOpen },
+      {
+        id: 'find',
+        label: 'Find in document',
+        shortcut: `${modKey}F`,
+        action: openFind,
+        disabled: !filePath,
+        disabledReason: 'No document selected',
+      },
+      {
+        id: 'source',
+        label: showSource ? 'Return to rich text' : 'Edit Markdown source',
+        shortcut: `${modKey}/`,
+        action: toggleSource,
+        disabled: !filePath,
+        disabledReason: 'No document selected',
+      },
+      {
+        id: 'sidebar',
+        label: folderPath && showSidebar ? 'Hide files' : 'Browse files',
+        shortcut: '[',
+        action: toggleSidebar,
+      },
+      {
+        id: 'diff',
+        label: showDiff ? 'Hide changes' : 'Show changes',
+        shortcut: ']',
+        action: handleToggleDiff,
+        disabled: !filePath || !repoPath,
+        disabledReason: filePath ? 'No Git history here' : 'No document selected',
+      },
+      {
+        id: 'gitlog',
+        label: showGitLog ? 'Hide history' : 'Show history',
+        shortcut: `${modKey}L`,
+        action: toggleGitLog,
+        disabled: !filePath || !repoPath,
+        disabledReason: filePath ? 'No Git history here' : 'No document selected',
+      },
+      { id: 'zoomin', label: 'Zoom in', shortcut: `${modKey}+`, action: handleZoomIn },
+      { id: 'zoomout', label: 'Zoom out', shortcut: `${modKey}-`, action: handleZoomOut },
+      { id: 'zoomreset', label: 'Reset zoom', shortcut: `${modKey}0`, action: handleZoomReset },
     ],
-    [handleSave, handleOpen, openFind, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
+    [filePath, repoPath, folderPath, showSource, showSidebar, showDiff, showGitLog, handleSave, handleOpen, openFind, toggleSource, toggleSidebar, handleToggleDiff, toggleGitLog, handleZoomIn, handleZoomOut, handleZoomReset],
   );
 
   // Keyboard shortcuts
@@ -284,10 +391,10 @@ function App() {
     () => ({
       onSave: handleSave,
       onOpen: handleOpen,
-      onToggleSource: () => setShowSource((v) => !v),
+      onToggleSource: toggleSource,
       onToggleDiff: handleToggleDiff,
-      onToggleSidebar: () => setShowSidebar((v) => !v),
-      onToggleGitLog: () => setShowGitLog((v) => !v),
+      onToggleSidebar: toggleSidebar,
+      onToggleGitLog: toggleGitLog,
       onToggleCheatsheet: () => {
         setPaletteKey((k) => k + 1);
         setShowPalette((v) => !v);
@@ -297,7 +404,7 @@ function App() {
       onZoomOut: handleZoomOut,
       onZoomReset: handleZoomReset,
     }),
-    [handleSave, handleOpen, openFind, handleToggleDiff, handleZoomIn, handleZoomOut, handleZoomReset],
+    [handleSave, handleOpen, openFind, toggleSource, handleToggleDiff, toggleSidebar, toggleGitLog, handleZoomIn, handleZoomOut, handleZoomReset],
   );
 
   useKeyboardShortcuts(shortcutHandlers);
@@ -308,9 +415,9 @@ function App() {
       <div className="app-content">
         <div
           className="panel-side panel-side--left"
-          data-show={String(showSidebar)}
-          style={{ width: showSidebar ? sidebar.size + 4 : 0 }}
-          aria-hidden={!showSidebar}
+          data-show={String(sidebarVisible)}
+          style={{ width: sidebarVisible ? sidebar.size + 8 : 0 }}
+          aria-hidden={!sidebarVisible}
         >
           {sidebarMounted && (
             <Suspense>
@@ -319,7 +426,7 @@ function App() {
                 repoPath={repoPath}
                 currentFile={filePath}
                 onFileSelect={loadFile}
-                visible={showSidebar}
+                visible={sidebarVisible}
                 style={{ width: sidebar.size }}
               />
               <div className="resize-handle resize-handle-h" onMouseDown={sidebar.onMouseDown} onKeyDown={sidebar.onKeyDown} {...sidebar.ariaProps} />
@@ -347,11 +454,11 @@ function App() {
                   <div className="empty-state-actions">
                     <button type="button" className="empty-action" onClick={handleOpen}>
                       <kbd>{modKey}O</kbd>
-                      <span>Open</span>
+                      <span>Open file or folder</span>
                     </button>
                     <button type="button" className="empty-action" onClick={() => { setPaletteKey((k) => k + 1); setShowPalette(true); }}>
                       <kbd>{modKey}K</kbd>
-                      <span>Command Palette</span>
+                      <span>Quick actions</span>
                     </button>
                   </div>
                 </div>
@@ -361,7 +468,7 @@ function App() {
             <div
               className="panel-side panel-side--right"
               data-show={String(showDiff)}
-              style={{ width: showDiff ? diffPanel.size + 4 : 0 }}
+              style={{ width: showDiff ? diffPanel.size + 8 : 0 }}
               aria-hidden={!showDiff}
             >
               {diffMounted && (
@@ -376,7 +483,7 @@ function App() {
           <div
             className="panel-bottom"
             data-show={String(showGitLog)}
-            style={{ height: showGitLog ? gitLog.size + 4 : 0 }}
+            style={{ height: showGitLog ? gitLog.size + 8 : 0 }}
             aria-hidden={!showGitLog}
           >
             {gitLogMounted && (
@@ -392,6 +499,14 @@ function App() {
           </div>
         </main>
       </div>
+
+      <StatusBar
+        filePath={filePath}
+        repoPath={repoPath}
+        fileStatus={fileStatus}
+        saveStatus={saveStatus}
+        showSource={showSource}
+      />
 
       {showPalette && (
         <CommandPalette

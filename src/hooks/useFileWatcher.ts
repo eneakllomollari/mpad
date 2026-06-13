@@ -15,7 +15,7 @@ export function useFileWatcher(
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!filePath) return;
+    if (!filePath || !window.__TAURI_INTERNALS__) return;
 
     let stopWatcher: (() => void) | null = null;
     let cancelled = false;

@@ -37,12 +37,12 @@ describe('fuzzyMatch', () => {
 // --- filterItems ---
 
 const commands: PaletteCommand[] = [
-  { id: 'save', label: 'Save', shortcut: '⌘S', action: () => {} },
-  { id: 'open', label: 'Open File', shortcut: '⌘O', action: () => {} },
-  { id: 'source', label: 'Toggle Source', shortcut: '⌘/', action: () => {} },
-  { id: 'diff', label: 'Toggle Diff', shortcut: '⌘D', action: () => {} },
-  { id: 'sidebar', label: 'Toggle Sidebar', shortcut: '⌘B', action: () => {} },
-  { id: 'gitlog', label: 'Toggle Git Log', shortcut: '⌘L', action: () => {} },
+  { id: 'save', label: 'Save changes', shortcut: '⌘S', action: () => {} },
+  { id: 'open', label: 'Open file or folder', shortcut: '⌘O', action: () => {} },
+  { id: 'source', label: 'Edit Markdown source', shortcut: '⌘/', action: () => {} },
+  { id: 'diff', label: 'Show changes', shortcut: '⌘D', action: () => {} },
+  { id: 'sidebar', label: 'Browse files', shortcut: '⌘B', action: () => {} },
+  { id: 'gitlog', label: 'Show history', shortcut: '⌘L', action: () => {} },
 ];
 
 const files = [
@@ -75,6 +75,33 @@ describe('filterItems', () => {
     expect(save!.hint).toBe('⌘S');
   });
 
+  it('empty query omits disabled commands from quick actions', () => {
+    const disabledCommands: PaletteCommand[] = [
+      { id: 'save', label: 'Save changes', shortcut: '⌘S', action: () => {}, disabled: true, disabledReason: 'No document selected' },
+      { id: 'open', label: 'Open file or folder', shortcut: '⌘O', action: () => {} },
+    ];
+
+    const results = filterItems('', disabledCommands, files, 50);
+
+    expect(results).toHaveLength(1);
+    expect(results[0].id).toBe('open');
+  });
+
+  it('searched disabled commands expose their disabled reason as the hint', () => {
+    const disabledCommands: PaletteCommand[] = [
+      { id: 'save', label: 'Save changes', shortcut: '⌘S', action: () => {}, disabled: true, disabledReason: 'No document selected' },
+    ];
+
+    const results = filterItems('save', disabledCommands, files, 50);
+
+    expect(results[0]).toMatchObject({
+      id: 'save',
+      disabled: true,
+      disabledReason: 'No document selected',
+      hint: 'No document selected',
+    });
+  });
+
   it('empty query respects limit', () => {
     const results = filterItems('', commands, files, 2);
     expect(results).toHaveLength(2);
@@ -91,7 +118,7 @@ describe('filterItems', () => {
   });
 
   it('ranks commands above files', () => {
-    const results = filterItems('tog', commands, files, 50);
+    const results = filterItems('show', commands, files, 50);
     const firstFile = results.findIndex((r) => r.type === 'file');
     const lastCommand = results.reduce((acc, r, i) => (r.type === 'command' ? i : acc), -1);
     if (firstFile !== -1 && lastCommand !== -1) {

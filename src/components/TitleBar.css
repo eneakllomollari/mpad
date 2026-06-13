@@ -2,6 +2,9 @@
   height: 38px;
   background: transparent;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-app-region: drag;
+  app-region: drag;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -10,10 +13,6 @@
   left: 0;
   right: 0;
   z-index: 100;
-  /* Ensure it doesn't block clicks on elements below except for dragging */
-  pointer-events: none;
-}
-
-.titlebar[data-tauri-drag-region] {
   pointer-events: auto;
+  cursor: default;
 }

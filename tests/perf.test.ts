@@ -25,9 +25,9 @@ const CI_FACTOR = process.env.CI ? 2 : 1;
 const gate = (ms: number) => ms * CI_FACTOR;
 
 const commands: PaletteCommand[] = [
-  { id: 'save', label: 'Save', shortcut: '⌘S', action: () => {} },
-  { id: 'open', label: 'Open File', shortcut: '⌘O', action: () => {} },
-  { id: 'source', label: 'Toggle Source', shortcut: '⌘/', action: () => {} },
+  { id: 'save', label: 'Save changes', shortcut: '⌘S', action: () => {} },
+  { id: 'open', label: 'Open file or folder', shortcut: '⌘O', action: () => {} },
+  { id: 'source', label: 'Edit Markdown source', shortcut: '⌘/', action: () => {} },
 ];
 
 describe('filterItems latency gates', () => {
