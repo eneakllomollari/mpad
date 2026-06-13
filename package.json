@@ -4,7 +4,6 @@
   "version": "0.1.2",
   "type": "module",
   "scripts": {
-    "prepare": "git config core.hooksPath .hooks",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
@@ -30,7 +29,6 @@
     "@tiptap/extension-code-block-lowlight": "^3.22.2",
     "@tiptap/extension-highlight": "^3.22.2",
     "@tiptap/extension-image": "^3.22.2",
-    "@tiptap/extension-link": "^3.22.2",
     "@tiptap/extension-table": "^3.22.2",
     "@tiptap/extension-table-cell": "^3.22.2",
     "@tiptap/extension-table-header": "^3.22.2",

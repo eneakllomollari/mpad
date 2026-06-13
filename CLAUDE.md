@@ -51,9 +51,8 @@ Do NOT rely on static documentation — it goes stale. Instead, discover convent
 1. **Lint rules are law**: `eslint.config.js` has `no-restricted-imports` that ban dangerous patterns (FS plugin direct read/write, gray-matter, wrong BubbleMenu import). Violating these fails CI. Read the rule messages for rationale.
 2. **Tests are specs**: `tests/` contains the source-of-truth behavioral contracts. Read test files before modifying any module — they document expected behavior better than prose.
 3. **Perf gates are enforced**: `tests/fuzzyMatch.test.ts` has median-latency gates. `tests/perf.test.ts` enforces bundle/import budgets. New perf-sensitive code must have perf gates.
-4. **Pre-commit runs everything**: `.hooks/pre-commit` is the canonical check sequence. Auto-installed via `bun install` (`prepare` script).
-5. **CI is the gatekeeper**: `.github/workflows/ci.yml` — if it's not checked in CI, it's not enforced. Read this file to understand what gates exist.
-6. **Rust tests tell the git story**: `src-tauri/src/git.rs` `#[cfg(test)]` module — 18 tests covering all git operations with temp repos.
+4. **CI is the gatekeeper**: `.github/workflows/ci.yml` — if it's not checked in CI, it's not enforced. Read this file to understand what gates exist.
+5. **Rust tests tell the git story**: `src-tauri/src/git.rs` `#[cfg(test)]` module — 18 tests covering all git operations with temp repos.
 
 ## Key Files
 
@@ -82,7 +81,6 @@ Do NOT rely on static documentation — it goes stale. Instead, discover convent
 - React 19: `set-state-in-effect` lint rule — avoid calling setState synchronously in effects; use callbacks or fetch in `.then()` chains instead
 - React 19: `react-refresh/only-export-components` — don't export non-component functions from component files; extract shared logic to `src/lib/`
 - git2 feature name is `vendored-libgit2` (not `vendored`)
-- Pre-commit hook at `.hooks/pre-commit` mirrors CI (tsc, eslint, oxlint, knip, vitest, cargo check/test/clippy) — auto-installed via `bun install`
 - Diff panel must refresh when switching files — handle in `loadFile`, not via a separate effect (avoids setState-in-effect lint)
 - Sidebar auto-expands `.claude/`, `.cursor/`, `.agents/` directories by default
 - **Panel color consistency**: All panel backgrounds (sidebar, diff, git log, status bar) MUST use the same background color. In dark mode, `--bg-secondary` and `--sidebar-bg` must be identical. Do NOT introduce new panel background values that break this consistency.
