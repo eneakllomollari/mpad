@@ -111,29 +111,30 @@ body {
 .tiptap h6 {
   font-family: var(--font-body);
   color: var(--heading-color);
-  font-weight: 680;
-  line-height: 1.12;
+  font-weight: 640;
+  line-height: 1.16;
   margin-top: 2.15em;
   margin-bottom: 0.58em;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.016em;
   font-optical-sizing: auto;
   text-wrap: balance;
 }
 
+/* Display voice: bold-but-measured weight with negative tracking (Geist sans) */
 .tiptap h1 {
   font-family: var(--font-editor-ui);
   font-size: 2.18em;
-  font-weight: 760;
-  letter-spacing: -0.036em;
-  line-height: 1.02;
+  font-weight: 680;
+  letter-spacing: -0.034em;
+  line-height: 1.04;
   margin-top: 0;
 }
 
 .tiptap h2 {
   font-family: var(--font-editor-ui);
   font-size: 1.32em;
-  font-weight: 720;
-  letter-spacing: -0.024em;
+  font-weight: 660;
+  letter-spacing: -0.026em;
   padding-bottom: 0.25em;
   box-shadow: inset 0 -1px 0 var(--border-light);
 }
@@ -141,8 +142,8 @@ body {
 .tiptap h3 {
   font-family: var(--font-editor-ui);
   font-size: 1.08em;
-  font-weight: 700;
-  letter-spacing: -0.014em;
+  font-weight: 640;
+  letter-spacing: -0.016em;
 }
 
 .tiptap h4 {
@@ -219,7 +220,7 @@ body {
 .tiptap pre {
   background: var(--code-block-bg);
   box-shadow: 0 0 0 1px var(--code-block-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   padding: 1.1em 1.35em;
   margin: 1.35em 0;
   overflow-x: auto;
@@ -784,12 +785,13 @@ body {
 /* ── Search Highlights ────────────────────────────── */
 
 .search-match {
-  background: rgba(255, 200, 50, 0.35);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
   border-radius: 2px;
 }
 
 .search-match-active {
-  background: rgba(255, 160, 0, 0.6);
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent-on, #fff);
   border-radius: 2px;
   outline: 1px solid var(--accent);
 }
@@ -1122,11 +1124,48 @@ body {
   box-sizing: border-box;
 }
 
+.empty-state-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 2.1rem;
+  animation: empty-brand-in 420ms var(--ease-out-expo) both;
+}
+
+.empty-state-title {
+  font-family: var(--font-editor-ui);
+  font-size: 2.2rem;
+  font-weight: 640;
+  letter-spacing: -0.045em;
+  color: var(--heading-color);
+  line-height: 1;
+}
+
+.empty-state-subtitle {
+  font-family: var(--font-ui);
+  font-size: 0.92rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  letter-spacing: -0.01em;
+}
+
 .empty-state-actions {
   display: flex;
   flex-direction: column;
   gap: 0.72rem;
   min-width: 260px;
+  animation: empty-brand-in 420ms var(--ease-out-expo) 90ms both;
+}
+
+@keyframes empty-brand-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-state-brand,
+  .empty-state-actions { animation: none; }
 }
 
 .empty-action {
@@ -1197,7 +1236,7 @@ body {
   color: var(--text-secondary);
   cursor: pointer;
   padding: 4px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs); /* concentric: 8px menu − 4px padding */
   font-size: 13px;
   font-family: var(--font-ui);
   line-height: 1;
@@ -1224,6 +1263,89 @@ body {
   background: none;
   padding: 0;
   color: inherit;
+}
+
+/* Icon button (link) — optically centered SVG */
+.bubble-menu button.bubble-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 7px;
+}
+
+.bubble-menu button.bubble-icon svg {
+  display: block;
+}
+
+/* ── Link Popover ─────────────────────────────────── */
+
+.link-popover {
+  position: fixed;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg); /* concentric: inner 8px input + 4px padding */
+  padding: 4px;
+  box-shadow: var(--shadow-float);
+  animation: menu-enter 160ms var(--ease-spring);
+}
+
+.link-popover-input {
+  width: 220px;
+  padding: 6px 9px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  outline: none;
+}
+
+.link-popover-input::placeholder {
+  color: var(--text-muted);
+}
+
+.link-popover-input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-subtle);
+}
+
+.link-popover-btn {
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 540;
+  transition: background 150ms var(--ease-spring), color 150ms var(--ease-spring), transform 100ms var(--ease-spring);
+}
+
+.link-popover-btn:active {
+  transform: scale(0.96);
+}
+
+.link-popover-apply {
+  background: var(--accent);
+  color: #fff;
+}
+
+.link-popover-apply:hover {
+  background: var(--accent-hover);
+}
+
+.link-popover-remove {
+  background: none;
+  color: var(--text-secondary);
+}
+
+.link-popover-remove:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 /* ── Slash Command Menu ───────────────────────────── */
@@ -1255,7 +1377,7 @@ body {
   gap: 12px;
   min-height: 38px;
   padding: 7px 11px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm); /* concentric: 10px menu − 4px padding */
   cursor: pointer;
   transition: background 150ms var(--ease-spring), transform 100ms var(--ease-spring);
 }

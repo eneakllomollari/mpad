@@ -451,6 +451,10 @@ function App() {
                 </Suspense>
               ) : (
                 <div className="empty-state">
+                  <div className="empty-state-brand">
+                    <span className="empty-state-title">mpad</span>
+                    <span className="empty-state-subtitle">A warm place for Markdown</span>
+                  </div>
                   <div className="empty-state-actions">
                     <button type="button" className="empty-action" onClick={handleOpen}>
                       <kbd>{modKey}O</kbd>

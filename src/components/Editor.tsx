@@ -270,6 +270,120 @@ function SlashMenu({ editor, onClose }: { editor: ReturnType<typeof useEditor>; 
   );
 }
 
+const LinkIcon = (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </svg>
+);
+
+interface LinkDraft {
+  from: number;
+  to: number;
+  href: string;
+  top: number;
+  left: number;
+}
+
+// Inline link editor. Replaces window.prompt (unreliable in Tauri's WKWebView)
+// and lets you edit an existing link's URL instead of only removing it. The
+// selection range is captured up front so applying still works after the input
+// steals DOM focus from the editor.
+function LinkPopover({
+  editor,
+  draft,
+  onClose,
+}: {
+  editor: NonNullable<ReturnType<typeof useEditor>>;
+  draft: LinkDraft;
+  onClose: () => void;
+}) {
+  const [href, setHref] = useState(draft.href);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    });
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) onClose();
+    };
+    window.addEventListener('mousedown', handler);
+    return () => window.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  const range = { from: draft.from, to: draft.to };
+
+  const apply = () => {
+    const url = href.trim();
+    const chain = editor.chain().focus().setTextSelection(range).extendMarkRange('link');
+    if (url) chain.setLink({ href: url }).run();
+    else chain.unsetLink().run();
+    onClose();
+  };
+
+  const remove = () => {
+    editor.chain().focus().setTextSelection(range).extendMarkRange('link').unsetLink().run();
+    onClose();
+  };
+
+  const left = Math.max(8, Math.min(draft.left, window.innerWidth - 320));
+  const top = Math.min(draft.top, window.innerHeight - 80);
+
+  return (
+    <div
+      ref={popoverRef}
+      className="link-popover"
+      style={{ top, left }}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <input
+        ref={inputRef}
+        type="text"
+        className="link-popover-input"
+        placeholder="Paste or type a URL"
+        value={href}
+        spellCheck={false}
+        autoComplete="off"
+        aria-label="Link URL"
+        onChange={(e) => setHref(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            apply();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            onClose();
+          }
+        }}
+      />
+      <button type="button" className="link-popover-btn link-popover-apply" onMouseDown={(e) => { e.preventDefault(); apply(); }}>
+        {draft.href ? 'Update' : 'Add'}
+      </button>
+      {draft.href && (
+        <button type="button" className="link-popover-btn link-popover-remove" onMouseDown={(e) => { e.preventDefault(); remove(); }} aria-label="Remove link">
+          Remove
+        </button>
+      )}
+    </div>
+  );
+}
+
 // --- Bubble menu button config ---
 const bubbleItems: { mark: string; label: React.ReactNode; command: string; ariaLabel: string }[] = [
   { mark: 'bold', label: <strong>B</strong>, command: 'toggleBold', ariaLabel: 'Bold' },
@@ -291,6 +405,8 @@ export function Editor({
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [slashMenuFilePath, setSlashMenuFilePath] = useState<string | null>(null);
   const closeSlashMenu = useCallback(() => setShowSlashMenu(false), []);
+  const [linkDraft, setLinkDraft] = useState<LinkDraft | null>(null);
+  const closeLinkPopover = useCallback(() => setLinkDraft(null), []);
   const [sessionCache] = useState(() => new Map<string, CachedEditorSession>());
   const prevFilePathRef = useRef(filePath);
 
@@ -527,20 +643,24 @@ export function Editor({
             ))}
             <button
               type="button"
-              aria-label="Insert link"
+              aria-label={editor.isActive('link') ? 'Edit link' : 'Insert link'}
               aria-pressed={editor.isActive('link')}
-              className={editor.isActive('link') ? 'active' : ''}
+              className={`bubble-icon ${editor.isActive('link') ? 'active' : ''}`}
               onMouseDown={(e) => {
                 e.preventDefault();
-                if (editor.isActive('link')) {
-                  editor.chain().focus().unsetLink().run();
-                } else {
-                  const url = window.prompt('URL');
-                  if (url) editor.chain().focus().setLink({ href: url }).run();
-                }
+                const { from, to } = editor.state.selection;
+                const anchor = editor.view.coordsAtPos(from);
+                const end = editor.view.coordsAtPos(to);
+                setLinkDraft({
+                  from,
+                  to,
+                  href: (editor.getAttributes('link').href as string) ?? '',
+                  top: end.bottom + 8,
+                  left: anchor.left,
+                });
               }}
             >
-              🔗
+              {LinkIcon}
             </button>
           </div>
         </BubbleMenu>
@@ -554,6 +674,9 @@ export function Editor({
       <EditorContent editor={editor} role="textbox" aria-label="Document editor" />
       {showSlashMenu && slashMenuFilePath === filePath && editor && (
         <SlashMenu editor={editor} onClose={closeSlashMenu} />
+      )}
+      {linkDraft && editor && (
+        <LinkPopover editor={editor} draft={linkDraft} onClose={closeLinkPopover} />
       )}
     </div>
   );
