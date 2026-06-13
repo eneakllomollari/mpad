@@ -76,7 +76,7 @@ export function FindBar({ editor, visible, activationToken, onClose }: FindBarPr
 
       requestAnimationFrame(() => {
         const active = editor.view.dom.querySelector('.search-match-active');
-        active?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        active?.scrollIntoView({ block: 'center', behavior: 'auto' });
       });
     },
     [editor],

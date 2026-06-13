@@ -169,6 +169,15 @@ function SlashMenu({ editor, onClose }: { editor: ReturnType<typeof useEditor>; 
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // If focus moved to another field (find bar, command palette, link
+      // popover, source textarea), close the menu and let the key through —
+      // never steal keystrokes from inputs outside the editor.
+      const active = document.activeElement;
+      if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+        onClose();
+        return;
+      }
+
       const selectedItem = filteredRef.current[selectedRef.current];
 
       switch (e.key) {
@@ -238,7 +247,7 @@ function SlashMenu({ editor, onClose }: { editor: ReturnType<typeof useEditor>; 
     return { top: Math.max(4, top), left: Math.max(4, left) };
   }, [editor]);
 
-  if (!pos || filtered.length === 0) return null;
+  if (!pos) return null;
 
   return (
     <div
@@ -249,6 +258,9 @@ function SlashMenu({ editor, onClose }: { editor: ReturnType<typeof useEditor>; 
       aria-label="Insert block"
     >
       {query && <div className="slash-menu-query" aria-live="polite">/{query}</div>}
+      {filtered.length === 0 && (
+        <div className="slash-menu-empty" role="status">No matching block · Esc to dismiss</div>
+      )}
       {filtered.map((item, i) => (
         <div
           key={item.label}
@@ -343,7 +355,7 @@ function LinkPopover({
   };
 
   const left = Math.max(8, Math.min(draft.left, window.innerWidth - 320));
-  const top = Math.min(draft.top, window.innerHeight - 80);
+  const top = Math.max(8, Math.min(draft.top, window.innerHeight - 80));
 
   return (
     <div
