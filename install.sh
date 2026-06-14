@@ -46,7 +46,11 @@ if [ -d "/usr/local/bin" ]; then
     CLI_SCRIPT="$TMP_DIR/mpad-cli"
     curl -fsSL "https://raw.githubusercontent.com/$REPO/main/scripts/mpad" -o "$CLI_SCRIPT"
     chmod +x "$CLI_SCRIPT"
-    cp -f "$CLI_SCRIPT" "$CLI_TARGET"
+    # Remove any existing target first. If it's a symlink (e.g. from an older
+    # install), `cp` would follow it and either fail with ENOENT or clobber the
+    # link's target — including the app binary it may point at.
+    rm -f "$CLI_TARGET"
+    cp "$CLI_SCRIPT" "$CLI_TARGET"
 else
     echo "Warning: /usr/local/bin not found. CLI wrapper not installed."
 fi
